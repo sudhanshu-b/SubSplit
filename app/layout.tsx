@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
+import NavbarController from "@/components/navbar-controller";
 
-// Payoneer uses Gilroy — a premium geometric sans. Outfit is the closest
-// free match on Google Fonts: same geometric construction, clean rounded
-// terminals, and excellent weight range from thin to black.
-const font = Outfit({
+// Inter Tight — condensed, editorial, premium. Tight letter-spacing and
+// a wide weight range make it ideal for large display headings and clean UI.
+const font = Inter_Tight({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "SubSplit",
   description: "Split subscriptions with others",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 const themeScript = `
@@ -46,7 +48,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={font.className}>
-        <Navbar />
+        {/* NavbarController hides the app navbar on the landing page ("/")
+            so the landing page can render its own floating pill navbar. */}
+        <NavbarController />
         {children}
       </body>
     </html>

@@ -1,11 +1,16 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { membership, subscription, conversation, conversationParticipant } from "@/db/schema";
+import {
+  membership,
+  subscription,
+  conversation,
+  conversationParticipant,
+} from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string; memberId: string }> }
+  { params }: { params: Promise<{ id: string; memberId: string }> },
 ) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) {
@@ -13,7 +18,7 @@ export async function PATCH(
   }
 
   const { id: subscriptionId, memberId } = await params;
-  const { action } = await request.json() as { action: "approve" | "reject" };
+  const { action } = (await request.json()) as { action: "approve" | "reject" };
 
   if (action !== "approve" && action !== "reject") {
     return Response.json({ error: "Invalid action." }, { status: 400 });
@@ -21,7 +26,10 @@ export async function PATCH(
 
   // Verify the requesting user is the host of this listing.
   const [listing] = await db
-    .select({ hostId: subscription.hostId, totalSeats: subscription.totalSeats })
+    .select({
+      hostId: subscription.hostId,
+      totalSeats: subscription.totalSeats,
+    })
     .from(subscription)
     .where(eq(subscription.id, subscriptionId))
     .limit(1);
@@ -31,7 +39,10 @@ export async function PATCH(
   }
 
   if (listing.hostId !== session.user.id) {
-    return Response.json({ error: "Only the host can manage requests." }, { status: 403 });
+    return Response.json(
+      { error: "Only the host can manage requests." },
+      { status: 403 },
+    );
   }
 
   if (action === "approve") {
@@ -41,7 +52,10 @@ export async function PATCH(
       .select({ activeCount: sql<number>`cast(count(*) as int)` })
       .from(membership)
       .where(
-        and(eq(membership.subscriptionId, subscriptionId), eq(membership.status, "active"))
+        and(
+          eq(membership.subscriptionId, subscriptionId),
+          eq(membership.status, "active"),
+        ),
       );
 
     if (activeCount >= listing.totalSeats) {
@@ -55,8 +69,8 @@ export async function PATCH(
         and(
           eq(membership.subscriptionId, subscriptionId),
           eq(membership.memberId, memberId),
-          eq(membership.status, "pending")
-        )
+          eq(membership.status, "pending"),
+        ),
       );
 
     // Auto-create a conversation between host and member so they can
@@ -68,7 +82,7 @@ export async function PATCH(
 
     await db.insert(conversationParticipant).values([
       { conversationId: newConversation.id, userId: session.user.id }, // host
-      { conversationId: newConversation.id, userId: memberId },        // member
+      { conversationId: newConversation.id, userId: memberId }, // member
     ]);
   } else {
     await db
@@ -78,8 +92,8 @@ export async function PATCH(
         and(
           eq(membership.subscriptionId, subscriptionId),
           eq(membership.memberId, memberId),
-          eq(membership.status, "pending")
-        )
+          eq(membership.status, "pending"),
+        ),
       );
   }
 
