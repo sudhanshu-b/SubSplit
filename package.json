@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --no-turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx db/seed.ts"
+    "seed": "tsx db/seed.ts",
+    "postinstall": "node scripts/patch-kysely.js"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.3.0",
