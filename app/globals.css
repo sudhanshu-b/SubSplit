@@ -39,6 +39,11 @@
   }
 }
 
+@keyframes nav-enter {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
 @layer utilities {
   .dark .bg-white {
     background-color: #0f172a;

@@ -53,12 +53,7 @@ export default function Navbar() {
   }
 
   return (
-    <motion.div
-      className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4"
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0,   opacity: 1 }}
-      transition={{ duration: 0.5, ease: EASE }}
-    >
+    <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4 animate-[nav-enter_0.5s_cubic-bezier(0.22,1,0.36,1)_both]">
       <nav
         className={`flex items-center gap-3 w-full max-w-2xl rounded-2xl px-3 py-2
                     transition-all duration-300 backdrop-blur-xl
@@ -265,6 +260,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-    </motion.div>
+    </div>
   );
 }
