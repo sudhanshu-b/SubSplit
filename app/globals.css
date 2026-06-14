@@ -37,6 +37,43 @@
   *:focus-visible {
     outline: none;
   }
+
+  /* ── Scrollbar — thin, modern, theme-aware ── */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d4d4d8 transparent; /* zinc-300 thumb, transparent track */
+  }
+
+  html.dark * {
+    scrollbar-color: #3f3f46 transparent; /* zinc-700 thumb, transparent track */
+  }
+
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #d4d4d8;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #a1a1aa;
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background-color: #3f3f46;
+  }
+
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background-color: #52525b;
+  }
 }
 
 @keyframes nav-enter {

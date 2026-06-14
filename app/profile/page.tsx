@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+export const metadata = { title: "Profile · LetsSplit" };
+
 type ProfileUser = {
   name: string;
   email: string;
@@ -9,83 +11,188 @@ type ProfileUser = {
   phone?: string | null;
   trustScore?: number | string | null;
   isPhoneVerified?: boolean | null;
+  emailVerified?: boolean | null;
+  createdAt?: Date | string | null;
 };
+
+function Dot({ color, pulse = false }: { color: string; pulse?: boolean }) {
+  return (
+    <span
+      className={`rounded-full inline-block flex-shrink-0 ${pulse ? "animate-pulse" : ""}`}
+      style={{ width: 6, height: 6, backgroundColor: color }}
+    />
+  );
+}
+
+function Row({ label, value, aside }: { label: string; value: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between py-4 border-b border-zinc-100 dark:border-zinc-800/70 last:border-0 gap-6">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-600 pt-0.5 flex-shrink-0 w-28">
+        {label}
+      </p>
+      <div className="flex items-center gap-2 flex-1 justify-end text-right">
+        {value}
+        {aside}
+      </div>
+    </div>
+  );
+}
 
 export default async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
   const user = session.user as ProfileUser;
+
   const initials =
     user.name
       .split(" ")
       .filter(Boolean)
       .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
+      .map(p => p[0]?.toUpperCase())
       .join("") || "U";
 
-  return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8">
-        <h1 className="mb-1 text-3xl font-bold text-gray-900">Profile</h1>
-        <p className="text-sm text-gray-500">
-          View the account details attached to your LetsSplit profile.
-        </p>
-      </div>
+  const firstName = user.name.split(" ")[0] ?? user.name;
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div className="flex h-20 w-20 overflow-hidden rounded-full bg-indigo-100 text-2xl font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">
-            {user.image ? (
+  const memberSince = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+    : null;
+
+  const trustScore = user.trustScore != null
+    ? parseFloat(String(user.trustScore)).toFixed(1)
+    : null;
+
+  return (
+    <main className="bg-zinc-50 dark:bg-[#0e0e10] min-h-[calc(100vh-80px)]">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+
+        {/* ── Eyebrow ──────────────────────────────────────────────────── */}
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-600 mb-5">
+          Your profile
+        </p>
+
+        {/* ── Avatar + name ────────────────────────────────────────────── */}
+        <div className="flex items-center gap-4 mb-10">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full flex-shrink-0
+                           bg-zinc-200 dark:bg-zinc-800 overflow-hidden
+                           text-lg font-bold text-zinc-700 dark:text-zinc-300">
+            {user.image
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="m-auto">{initials}</span>
-            )}
-          </div>
+              ? <img src={user.image} alt="" className="h-full w-full object-cover" />
+              : initials}
+          </span>
 
           <div className="min-w-0">
-            <h2 className="truncate text-2xl font-bold text-gray-900">{user.name}</h2>
-            <p className="truncate text-sm text-gray-500">{user.email}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 leading-snug truncate">
+              {firstName}
+              {user.name.includes(" ") && (
+                <span className="text-zinc-400 dark:text-zinc-500">
+                  {" "}{user.name.slice(firstName.length)}
+                </span>
+              )}
+            </h1>
+            {memberSince && (
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                Member since {memberSince}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Email
-            </p>
-            <p className="truncate text-sm font-medium text-gray-900">{user.email}</p>
-          </div>
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        <div className="h-px bg-zinc-200 dark:bg-zinc-800 mb-2" />
 
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Phone
-            </p>
-            <p className="text-sm font-medium text-gray-900">
-              {user.phone || "Not added"}
-            </p>
-          </div>
+        {/* ── Info rows ────────────────────────────────────────────────── */}
+        <Row
+          label="Email"
+          value={
+            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+              {user.email}
+            </span>
+          }
+          aside={
+            user.emailVerified
+              ? <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                  <Dot color="#22c55e" pulse />
+                  verified
+                </span>
+              : <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                  <Dot color="#a1a1aa" />
+                  unverified
+                </span>
+          }
+        />
 
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Phone status
-            </p>
-            <p className="text-sm font-medium text-gray-900">
-              {user.isPhoneVerified ? "Verified" : "Not verified"}
-            </p>
-          </div>
+        <Row
+          label="Phone"
+          value={
+            user.phone
+              ? <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{user.phone}</span>
+              : <span className="text-sm text-zinc-400 dark:text-zinc-600">Not added</span>
+          }
+          aside={
+            user.phone
+              ? user.isPhoneVerified
+                ? <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                    <Dot color="#22c55e" pulse />
+                    verified
+                  </span>
+                : <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+                    <Dot color="#f59e0b" />
+                    not verified
+                  </span>
+              : undefined
+          }
+        />
 
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Trust score
-            </p>
-            <p className="text-sm font-medium text-gray-900">
-              {user.trustScore ?? "Not available"}
-            </p>
-          </div>
+        <Row
+          label="Trust score"
+          value={
+            trustScore
+              ? (
+                <span className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+                    {trustScore}
+                  </span>
+                  <span className="text-[11px] text-zinc-400">/ 5.0</span>
+                </span>
+              )
+              : <span className="text-sm text-zinc-400 dark:text-zinc-600">No reviews yet</span>
+          }
+        />
+
+        {/* ── Divider ──────────────────────────────────────────────────── */}
+        <div className="h-px bg-zinc-200 dark:bg-zinc-800 mt-2 mb-8" />
+
+        {/* ── Footer actions ───────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          {[
+            { href: "/home",         label: "Dashboard"     },
+            { href: "/browse",       label: "Browse plans"  },
+            { href: "/listings/new", label: "List a plan"   },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="group inline-flex items-center gap-1 w-fit
+                         text-[11px] font-semibold text-zinc-400 dark:text-zinc-500
+                         hover:text-zinc-900 dark:hover:text-zinc-100
+                         underline-offset-4 decoration-dotted decoration-zinc-300 dark:decoration-zinc-600
+                         hover:underline transition-colors duration-150 whitespace-nowrap"
+            >
+              {label}
+              <svg
+                className="w-3 h-3 flex-shrink-0 transition-transform duration-200
+                           group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+              </svg>
+            </a>
+          ))}
         </div>
-      </section>
+
+      </div>
     </main>
   );
 }

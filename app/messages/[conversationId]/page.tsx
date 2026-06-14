@@ -21,7 +21,6 @@ export default async function ConversationPage({ params }: { params: Params }) {
 
   const { conversationId } = await params;
 
-  // Verify the user is a participant and get the other participant's name.
   const otherParticipation = aliasedTable(conversationParticipant, "other_cp");
   const otherUser = aliasedTable(appUser, "other_user");
 
@@ -53,7 +52,6 @@ export default async function ConversationPage({ params }: { params: Params }) {
 
   if (!convo) notFound();
 
-  // Fetch all messages with sender names.
   const messages = await db
     .select({
       id: message.id,
@@ -68,7 +66,6 @@ export default async function ConversationPage({ params }: { params: Params }) {
     .where(eq(message.conversationId, conversationId))
     .orderBy(asc(message.createdAt));
 
-  // Mark all unread messages from the other participant as read on page load.
   await db
     .update(message)
     .set({ readAt: new Date() })
@@ -80,45 +77,55 @@ export default async function ConversationPage({ params }: { params: Params }) {
       )
     );
 
+  const initial = convo.otherUserName.charAt(0).toUpperCase();
+
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)]">
-      {/* Chat header */}
-      <div className="shrink-0 border-b border-gray-100 bg-white px-4 py-3 flex items-center gap-4">
+    <div className="flex justify-center items-start bg-zinc-50 dark:bg-[#0e0e10] min-h-[calc(100vh-80px)] md:py-6 md:px-4">
+    <div className="flex flex-col w-full md:max-w-[70%] h-[calc(100vh-80px)] md:h-[calc(100vh-116px)] bg-white dark:bg-zinc-900 md:border md:border-zinc-200 md:dark:border-zinc-800 md:rounded-2xl overflow-hidden md:shadow-sm">
+
+      {/* ── Header ── */}
+      <div className="shrink-0 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 px-4 py-3 flex items-center gap-3">
+        {/* Back */}
         <Link
           href="/messages"
-          className="text-gray-400 hover:text-gray-700 transition"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           aria-label="Back to messages"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
 
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
-            {convo.otherUserName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-gray-900 text-sm truncate">
+        {/* Avatar */}
+        <div className="shrink-0 w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-600 dark:text-zinc-300">
+          {initial}
+        </div>
+
+        {/* Name + subscription */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm truncate">
               {convo.otherUserName}
             </p>
             {convo.subscriptionTitle && (
-              <p className="text-xs text-gray-400 truncate">
+              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
                 {convo.subscriptionTitle}
-              </p>
+              </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Message thread — takes all remaining height */}
+      {/* ── Thread ── */}
       <div className="flex-1 overflow-hidden">
         <MessageThread
           conversationId={conversationId}
           currentUserId={session.user.id}
           initialMessages={messages}
+          otherUserName={convo.otherUserName}
         />
       </div>
+    </div>
     </div>
   );
 }

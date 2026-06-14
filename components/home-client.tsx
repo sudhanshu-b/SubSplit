@@ -161,7 +161,7 @@ function ActionCard({ href, eyebrow, title, description, loading = false, onClic
       <Link
         href={href}
         onClick={onClick}
-        className="group flex flex-col rounded-2xl p-5 border
+        className="group flex flex-col rounded-2xl p-4 sm:p-5 border
                    border-zinc-200 dark:border-zinc-700/60
                    bg-white dark:bg-zinc-900
                    hover:bg-zinc-900 dark:hover:bg-zinc-800
@@ -239,15 +239,15 @@ export default function HomeClient({
   }
 
   return (
-    <main className=" bg-zinc-50 dark:bg-[#0e0e10]">
-      <div className="max-w-2xl mx-auto px-5 py-16 sm:py-24">
+    <main className="bg-zinc-50 dark:bg-[#0e0e10]">
+      <div className="max-w-2xl mx-auto px-4 sm:px-5 py-10 sm:py-16 md:py-24">
         {/* ── Greeting ── */}
         <FadeUp delay={0.05}>
           <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-600 mb-4">
             {part}
           </p>
 
-          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.02] text-zinc-900 dark:text-zinc-100 mb-5">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.02] text-zinc-900 dark:text-zinc-100 mb-5 break-words overflow-hidden">
             {first ? (
               <>
                 Welcome,&nbsp;
@@ -268,7 +268,7 @@ export default function HomeClient({
           </p>
 
           {/* Savings strip */}
-          <div className="flex items-center gap-2.5 text-sm flex-wrap">
+          <div className="flex items-center gap-x-2.5 gap-y-1.5 text-sm flex-wrap">
             <span className="text-zinc-400 dark:text-zinc-500 font-medium whitespace-nowrap">
               Members save up to
             </span>

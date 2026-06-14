@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 type Request = {
   memberId: string;
@@ -14,32 +17,29 @@ type Props = {
 };
 
 function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  const secs = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (secs < 60)  return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60)  return `${mins}m ago`;
+  const hrs  = Math.floor(mins / 60);
+  if (hrs  < 24)  return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export default function HostRequests({ listingId, initialRequests }: Props) {
-  const [requests, setRequests] = useState(initialRequests);
-  // Track which memberId is currently being processed so we can show a
-  // loading state on that row's buttons only.
+  const [requests,   setRequests]   = useState(initialRequests);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const [error,      setError]      = useState("");
 
   async function handleAction(memberId: string, action: "approve" | "reject") {
     setProcessing(memberId);
     setError("");
 
-    const res = await fetch(`/api/listings/${listingId}/requests/${memberId}`, {
+    const res  = await fetch(`/api/listings/${listingId}/requests/${memberId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
-
     const data = await res.json();
     setProcessing(null);
 
@@ -48,81 +48,94 @@ export default function HostRequests({ listingId, initialRequests }: Props) {
       return;
     }
 
-    // Remove the processed request from the list immediately.
-    setRequests((prev) => prev.filter((r) => r.memberId !== memberId));
+    setRequests(prev => prev.filter(r => r.memberId !== memberId));
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-600">
           Pending requests
-        </h2>
+        </p>
         {requests.length > 0 && (
-          <span className="text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
-            {requests.length} pending
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+            <span
+              className="rounded-full flex-shrink-0"
+              style={{ width: 5, height: 5, backgroundColor: "#f59e0b" }}
+            />
+            {requests.length}
           </span>
         )}
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
-          {error}
-        </p>
+        <p className="text-[11px] text-red-500 dark:text-red-400 mb-4">{error}</p>
       )}
 
       {requests.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-sm text-gray-400">No pending requests</p>
-          <p className="text-xs text-gray-300 mt-1">
-            New join requests will appear here.
-          </p>
-        </div>
+        <p className="text-sm text-zinc-400 dark:text-zinc-600">
+          No pending requests
+        </p>
       ) : (
-        <ul className="divide-y divide-gray-50">
+        <AnimatePresence initial={false}>
           {requests.map((req) => {
-            const isProcessing = processing === req.memberId;
+            const busy = processing === req.memberId;
             return (
-              <li
+              <motion.div
                 key={req.memberId}
-                className="flex items-center justify-between py-4 first:pt-0 last:pb-0"
+                initial={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className="overflow-hidden"
               >
-                {/* Member info */}
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm shrink-0">
-                    {req.memberName.charAt(0).toUpperCase()}
+                <div className="group flex items-center justify-between py-4
+                                border-b border-zinc-100 dark:border-zinc-800/70 last:border-0">
+                  {/* Left: initial + name + time */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0
+                                     bg-zinc-100 dark:bg-zinc-800
+                                     text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                      {req.memberName.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                        {req.memberName}
+                      </p>
+                      <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                        {timeAgo(req.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {req.memberName}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Requested {timeAgo(req.createdAt)}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleAction(req.memberId, "approve")}
-                    disabled={isProcessing}
-                    className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    {isProcessing ? "…" : "Approve"}
-                  </button>
-                  <button
-                    onClick={() => handleAction(req.memberId, "reject")}
-                    disabled={isProcessing}
-                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    {isProcessing ? "…" : "Reject"}
-                  </button>
+                  {/* Right: approve / reject as text actions */}
+                  <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                    <button
+                      onClick={() => handleAction(req.memberId, "approve")}
+                      disabled={busy}
+                      className="text-[12px] font-bold text-zinc-900 dark:text-zinc-100
+                                 hover:text-green-600 dark:hover:text-green-400
+                                 disabled:opacity-40 disabled:cursor-not-allowed
+                                 transition-colors duration-150"
+                    >
+                      {busy ? "…" : "Approve"}
+                    </button>
+                    <button
+                      onClick={() => handleAction(req.memberId, "reject")}
+                      disabled={busy}
+                      className="text-[12px] font-medium text-zinc-400 dark:text-zinc-500
+                                 hover:text-red-500 dark:hover:text-red-400
+                                 disabled:opacity-40 disabled:cursor-not-allowed
+                                 transition-colors duration-150"
+                    >
+                      {busy ? "…" : "Reject"}
+                    </button>
+                  </div>
                 </div>
-              </li>
+              </motion.div>
             );
           })}
-        </ul>
+        </AnimatePresence>
       )}
     </div>
   );

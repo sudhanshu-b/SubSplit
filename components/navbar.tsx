@@ -53,9 +53,9 @@ export default function Navbar() {
   }
 
   return (
-    <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4 animate-[nav-enter_0.5s_cubic-bezier(0.22,1,0.36,1)_both]">
+    <div className="fixed top-3 left-0 right-0 z-50 flex justify-center px-2 sm:px-4 animate-[nav-enter_0.5s_cubic-bezier(0.22,1,0.36,1)_both]">
       <nav
-        className={`flex items-center gap-3 w-full max-w-2xl rounded-2xl px-3 py-2
+        className={`flex items-center gap-2 sm:gap-3 w-full max-w-2xl rounded-2xl px-2.5 sm:px-3 py-2
                     transition-all duration-300 backdrop-blur-xl
                     ${scrolled
                       ? "bg-zinc-50/95 dark:bg-[#0e0e10]/95 shadow-md shadow-black/5 dark:shadow-black/40"
@@ -71,7 +71,7 @@ export default function Navbar() {
         </Link>
 
         {/* ── Search input ── */}
-        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5
+        <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl px-2.5 sm:px-3 py-1.5
                         bg-zinc-100 dark:bg-zinc-800/80
                         focus-within:ring-1 focus-within:ring-zinc-300 dark:focus-within:ring-zinc-600
                         transition-shadow">
@@ -125,11 +125,11 @@ export default function Navbar() {
           </svg>
         </Link>
 
-        {/* ── Notification bell ── */}
+        {/* ── Notification bell — hidden on mobile ── */}
         <button
           type="button"
           aria-label="Notifications"
-          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl
+          className="hidden sm:flex flex-shrink-0 w-8 h-8 items-center justify-center rounded-xl
                      text-zinc-500 dark:text-zinc-400
                      hover:bg-zinc-100 dark:hover:bg-zinc-800
                      transition-colors duration-200"
@@ -147,7 +147,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsMenuOpen(o => !o)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5
+              className="flex items-center gap-2 rounded-xl px-1.5 sm:px-2 py-1.5
                          hover:bg-zinc-100 dark:hover:bg-zinc-800
                          transition-colors duration-200"
               aria-haspopup="menu"
@@ -184,7 +184,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0, scale: 1   }}
                   exit={{    opacity: 0, y: 4, scale: 0.97 }}
                   transition={{ duration: 0.18, ease: EASE }}
-                  className="absolute right-0 z-50 mt-2 w-64 rounded-2xl
+                  className="absolute right-0 z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl
                              bg-white dark:bg-zinc-900
                              shadow-xl shadow-zinc-200/80 dark:shadow-black/50
                              ring-1 ring-zinc-100 dark:ring-zinc-800"

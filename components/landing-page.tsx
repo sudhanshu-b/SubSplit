@@ -382,16 +382,16 @@ function BrowseMockup() {
             </button>
           </div>
           {/* Search + filters */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 dark:bg-slate-900 border
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <div className="flex-shrink-0 flex-1 min-w-0 flex items-center gap-2 bg-gray-50 dark:bg-slate-900 border
                             border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5">
               <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
               </svg>
-              <span className="text-[10px] text-gray-400 dark:text-slate-500">Search by service, price…</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500 truncate">Search by service, price…</span>
             </div>
             {["All", "Streaming", "Productivity", "AI Tools"].map((f, i) => (
-              <span key={f} className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap ${
+              <span key={f} className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap ${
                 i === 0
                   ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
                   : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400"
@@ -401,7 +401,7 @@ function BrowseMockup() {
         </div>
 
         {/* ── 3 rich listing cards ── */}
-        <div className="p-4 grid grid-cols-3 gap-3">
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {MOCK_LISTINGS.map((l, i) => (
             <div
               key={i}
@@ -710,7 +710,7 @@ function HeroSection() {
       </motion.div>
 
       {/* Main headline — word-by-word curtain reveal */}
-      <h1 className="text-6xl sm:text-7xl md:text-[5.5rem] font-bold tracking-tight leading-none
+      <h1 className="text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-none
                      text-gray-900 dark:text-white mb-6 max-w-4xl">
         <RevealText text="Split subscriptions." delay={0.1} />
         <br />
@@ -719,8 +719,8 @@ function HeroSection() {
 
       {/* Subtext */}
       <motion.p
-        className="text-lg sm:text-xl text-gray-500 dark:text-slate-400 font-medium
-                   max-w-xl mb-10 leading-relaxed"
+        className="text-base sm:text-lg md:text-xl text-gray-500 dark:text-slate-400 font-medium
+                   max-w-xl mb-10 leading-relaxed px-2 sm:px-0"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.65, ease: EASE }}
@@ -732,28 +732,28 @@ function HeroSection() {
 
       {/* CTA buttons */}
       <motion.div
-        className="flex flex-wrap items-center justify-center gap-3"
+        className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-xs sm:max-w-none"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.8, ease: EASE }}
       >
-        <motion.div whileTap={{ scale: 0.96 }}>
+        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
           <Link
             href="/sign-up"
-            className="px-7 py-3.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900
+            className="flex items-center justify-center px-7 py-3.5 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900
                        text-base font-bold hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors
-                       shadow-lg shadow-gray-900/10"
+                       shadow-lg shadow-gray-900/10 w-full sm:w-auto"
           >
             Join for free
           </Link>
         </motion.div>
-        <motion.div whileTap={{ scale: 0.96 }}>
+        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
           <Link
             href="/browse"
-            className="px-7 py-3.5 rounded-full text-base font-bold text-gray-900 dark:text-white
+            className="flex items-center justify-center px-7 py-3.5 rounded-full text-base font-bold text-gray-900 dark:text-white
                        border border-gray-300 dark:border-slate-700 hover:border-gray-500
                        dark:hover:border-slate-500 hover:bg-gray-50 dark:hover:bg-slate-900
-                       transition-all flex items-center gap-1.5"
+                       transition-all gap-1.5 w-full sm:w-auto"
           >
             Browse plans
             <motion.span
@@ -800,7 +800,7 @@ function SocialProofSection() {
 /** ④ Product preview — browser chrome wrapping the browse-page mockup */
 function ProductPreviewSection() {
   return (
-    <section className="pt-24 pb-0 px-4 bg-white dark:bg-slate-950">
+    <section className="hidden md:block pt-24 pb-0 px-4 bg-white dark:bg-slate-950 overflow-hidden">
       <motion.div
         className="max-w-5xl mx-auto relative"
         initial={{ opacity: 0, y: 40, scale: 0.97 }}
@@ -872,21 +872,23 @@ function StatsSection() {
   ];
 
   return (
-    <section className="relative py-36 px-4 overflow-hidden bg-white dark:bg-slate-950">
-      {/* Orbiting floating badges */}
-      {FLOATING_ICONS.map((item, i) => (
-        <FloatingBadge
-          key={i}
-          icon={item.icon}
-          color={item.color}
-          delay={item.delay}
-          style={{
-            top:   item.top,
-            left:  item.left,
-            right: item.right,
-          }}
-        />
-      ))}
+    <section className="relative py-16 md:py-36 px-4 overflow-hidden bg-white dark:bg-slate-950">
+      {/* Orbiting floating badges — hidden on mobile to avoid overlap */}
+      <div className="hidden md:block">
+        {FLOATING_ICONS.map((item, i) => (
+          <FloatingBadge
+            key={i}
+            icon={item.icon}
+            color={item.color}
+            delay={item.delay}
+            style={{
+              top:   item.top,
+              left:  item.left,
+              right: item.right,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Counters */}
       <div ref={statsRef} className="relative z-10 max-w-2xl mx-auto text-center">
@@ -958,10 +960,40 @@ function FeaturesSection() {
         transition={{ duration: 0.4, ease: EASE }}
       />
 
+      {/* ── Mobile: stacked feature cards (no sticky scroll) ── */}
+      <div className="md:hidden px-4 py-16 bg-white dark:bg-slate-950 space-y-20">
+        {FEATURES.map((f, i) => (
+          <motion.div
+            key={i}
+            className="flex flex-col items-center text-center gap-6"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.55, ease: EASE }}
+          >
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-gray-100 dark:bg-slate-900 text-sm font-bold text-gray-600 dark:text-slate-400">
+              {f.tab}
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white whitespace-pre-line">
+              {f.headline}
+            </h2>
+            <p className="text-base text-gray-500 dark:text-slate-400 font-medium leading-relaxed">
+              {f.body}
+            </p>
+            <div className="w-full">
+              {i === 0 && <BrowseMockup />}
+              {i === 1 && <ListingDetailMockup />}
+              {i === 2 && <MessagesMockup />}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Desktop: sticky scroll (md and up) ── */}
       <div
         ref={containerRef}
         style={{ height: `${FEATURES.length * 100}vh` }}
-        className="relative"
+        className="relative hidden md:block"
       >
         <div className="sticky top-0 h-screen flex flex-col items-center justify-center
                         px-4 bg-white dark:bg-slate-950 overflow-hidden">
@@ -1050,10 +1082,10 @@ function HowItWorksSection() {
   ];
 
   return (
-    <section className="py-28 px-4 bg-white dark:bg-slate-950">
+    <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
       <motion.h2
-        className="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-center
-                   text-gray-900 dark:text-white mb-16"
+        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
+                   text-gray-900 dark:text-white mb-10 md:mb-16"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
@@ -1091,10 +1123,10 @@ function HowItWorksSection() {
 /** ⑧ Testimonials — masonry-style quote cards */
 function TestimonialsSection() {
   return (
-    <section className="py-28 px-4 bg-white dark:bg-slate-950">
+    <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
       <motion.h2
-        className="text-5xl sm:text-6xl font-bold tracking-tight leading-none text-center
-                   text-gray-900 dark:text-white mb-16"
+        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
+                   text-gray-900 dark:text-white mb-10 md:mb-16"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
@@ -1150,7 +1182,7 @@ function PricingSection() {
   ];
 
   return (
-    <section className="relative py-28 px-4 bg-gray-50 dark:bg-slate-900 overflow-hidden">
+    <section className="relative py-16 md:py-28 px-4 bg-gray-50 dark:bg-slate-900 overflow-hidden">
 
       {/* ── Background gradient orbs ── */}
       <div
@@ -1185,7 +1217,7 @@ function PricingSection() {
           </span>
         </motion.div>
 
-        <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-none
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none
                        text-gray-900 dark:text-white mb-5">
           <RevealText text="Everything's free," delay={0.05} />
           <br />
@@ -1193,7 +1225,7 @@ function PricingSection() {
         </h2>
 
         <motion.p
-          className="text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed"
+          className="text-base sm:text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed"
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -1366,9 +1398,9 @@ function PricingSection() {
 /** ⑪ Final CTA */
 function CTASection() {
   return (
-    <section className="py-28 px-4 text-center bg-white dark:bg-slate-950">
+    <section className="py-16 md:py-28 px-4 text-center bg-white dark:bg-slate-950">
       <motion.h2
-        className="text-5xl sm:text-6xl font-bold tracking-tight leading-none
+        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none
                    text-gray-900 dark:text-white mb-6"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -1379,7 +1411,7 @@ function CTASection() {
       </motion.h2>
 
       <motion.p
-        className="text-xl text-gray-500 dark:text-slate-400 font-medium mb-10
+        className="text-base sm:text-xl text-gray-500 dark:text-slate-400 font-medium mb-10
                    max-w-md mx-auto leading-relaxed"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -1390,28 +1422,28 @@ function CTASection() {
       </motion.p>
 
       <motion.div
-        className="flex flex-wrap items-center justify-center gap-3"
+        className="flex flex-col sm:flex-row items-center justify-center gap-3"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.2, ease: EASE }}
       >
-        <motion.div whileTap={{ scale: 0.96 }}>
+        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
           <Link
             href="/sign-up"
-            className="px-8 py-4 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900
+            className="flex items-center justify-center px-8 py-4 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900
                        text-base font-bold hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors
-                       shadow-xl shadow-gray-900/15"
+                       shadow-xl shadow-gray-900/15 w-full sm:w-auto"
           >
             Join for free
           </Link>
         </motion.div>
-        <motion.div whileTap={{ scale: 0.96 }}>
+        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
           <Link
             href="/browse"
-            className="px-8 py-4 rounded-full text-base font-bold text-gray-900 dark:text-white
+            className="flex items-center justify-center px-8 py-4 rounded-full text-base font-bold text-gray-900 dark:text-white
                        border border-gray-300 dark:border-slate-700 hover:border-gray-500
-                       dark:hover:border-slate-500 transition-all"
+                       dark:hover:border-slate-500 transition-all w-full sm:w-auto"
           >
             Browse plans →
           </Link>
@@ -1439,7 +1471,7 @@ function Footer() {
               The cleanest way to share subscriptions with people you trust.
             </p>
           </div>
-          <div className="flex gap-16">
+          <div className="flex gap-10 sm:gap-16">
             <div className="flex flex-col gap-3">
               <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-1">Product</p>
               {["Browse", "Pricing", "How it works", "Blog"].map((l) => (
