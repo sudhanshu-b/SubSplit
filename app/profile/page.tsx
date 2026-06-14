@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import ResendVerification from "@/components/resend-verification";
 
 export const metadata = { title: "Profile · LetsSplit" };
 
@@ -116,10 +117,7 @@ export default async function ProfilePage() {
                   <Dot color="#22c55e" pulse />
                   verified
                 </span>
-              : <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
-                  <Dot color="#a1a1aa" />
-                  unverified
-                </span>
+              : <ResendVerification email={user.email} />
           }
         />
 

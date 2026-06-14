@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [showPassword, setShow] = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [verified, setVerified] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -23,9 +24,10 @@ export default function SignUpPage() {
     setLoading(true);
 
     const { error } = await signUp.email({
-      name:     form.name,
-      email:    form.email,
-      password: form.password,
+      name:        form.name,
+      email:       form.email,
+      password:    form.password,
+      callbackURL: "/home",
     });
 
     setLoading(false);
@@ -35,7 +37,41 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/home");
+    // Email verification is required — show confirmation instead of redirecting
+    setVerified(true);
+  }
+
+  if (verified) {
+    return (
+      <div className="w-full max-w-[420px]">
+        <div className="flex items-center gap-2 mb-6">
+          <span
+            className="rounded-full animate-pulse"
+            style={{ width: 8, height: 8, backgroundColor: "#22c55e", display: "inline-block" }}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-slate-500">
+            Account created
+          </span>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight mb-3">
+          Check your inbox.
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed mb-8">
+          We sent a verification link to{" "}
+          <span className="font-semibold text-gray-900 dark:text-white">{form.email}</span>.
+          Click it to activate your account.
+        </p>
+        <p className="text-xs text-gray-400 dark:text-slate-500">
+          Already verified?{" "}
+          <button
+            onClick={() => router.push("/sign-in")}
+            className="font-semibold text-gray-900 dark:text-white underline underline-offset-2"
+          >
+            Sign in →
+          </button>
+        </p>
+      </div>
+    );
   }
 
   // Live password requirement checks

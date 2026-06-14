@@ -2,11 +2,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
 import { appUser, session, account, verification } from "@/db/schema";
+import { sendMail, verificationEmailHtml, resetPasswordEmailHtml, welcomeEmailHtml } from "@/lib/mailer";
 
 export const auth = betterAuth({
-  // Tells Better Auth to use our Postgres database via Drizzle.
-  // We explicitly map each Better Auth model to our Drizzle table so it
-  // uses our column definitions (including our custom app_user fields).
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -17,7 +15,7 @@ export const auth = betterAuth({
     },
   }),
 
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret:  process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
   trustedOrigins: [
     "http://localhost:3000",
@@ -28,36 +26,76 @@ export const auth = betterAuth({
   ].filter(Boolean) as string[],
 
   session: {
-    // Cache the session payload in the cookie for 5 minutes.
-    // API routes read from the cookie instead of querying the session table
-    // on every request — eliminates the Supabase round-trip on most calls.
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60,
+      maxAge:  5 * 60,
     },
   },
 
-  // Enable email + password sign-up and sign-in.
-  // This is the only auth method for Phase 1.
   emailAndPassword: {
     enabled: true,
-    // Email verification is required before a user can sign in.
-    // For this to work you must configure a real email provider.
-    // Set to false during local development if you haven't wired up email yet.
-    requireEmailVerification: false,
+    requireEmailVerification: true,
+
+    sendResetPassword: async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
+      try {
+        await sendMail({
+          to:      user.email,
+          subject: "Reset your password — LetsSplit",
+          from:    "LetsSplit <support@letssplit.in>",
+          html:    resetPasswordEmailHtml(user.name, url),
+        });
+        console.log("[mail] password reset sent to", user.email);
+      } catch (err) {
+        console.error("[mail] password reset FAILED for", user.email, err);
+      }
+    },
   },
 
-  // Declare app-specific fields that live on app_user but aren't part of
-  // Better Auth's core user model. Better Auth will include these in
-  // select queries and expose them on the session user object.
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
+      console.log("[mail] sendVerificationEmail CALLED — to:", user.email, "url:", url);
+      try {
+        await sendMail({
+          to:      user.email,
+          subject: "Verify your email — LetsSplit",
+          from:    "LetsSplit <hello@letssplit.in>",
+          html:    verificationEmailHtml(user.name, url),
+        });
+        console.log("[mail] verification SENT to", user.email);
+      } catch (err) {
+        console.error("[mail] verification FAILED for", user.email, err);
+      }
+    },
+  },
+
   user: {
     additionalFields: {
-      phone: { type: "string", required: false },
+      phone:           { type: "string",  required: false },
       isPhoneVerified: { type: "boolean", defaultValue: false, required: false },
-      trustScore: { type: "number", required: false },
+      trustScore:      { type: "number",  required: false },
+    },
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await sendMail({
+              to:      user.email,
+              subject: "Welcome to LetsSplit",
+              from:    "LetsSplit <hello@letssplit.in>",
+              html:    welcomeEmailHtml(user.name),
+            });
+            console.log("[mail] welcome sent to", user.email);
+          } catch (err) {
+            console.error("[mail] welcome FAILED for", user.email, err);
+          }
+        },
+      },
     },
   },
 });
 
-// Export the auth type so other files can infer the session shape.
 export type Auth = typeof auth;

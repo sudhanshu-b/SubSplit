@@ -8,10 +8,12 @@ import Spinner from "@/components/spinner";
 
 export default function SignInPage() {
   const router = useRouter();
-  const [form, setForm]         = useState({ email: "", password: "" });
-  const [showPassword, setShow] = useState(false);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [form, setForm]           = useState({ email: "", password: "" });
+  const [showPassword, setShow]   = useState(false);
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [unverified, setUnverified] = useState(false);
+  const [resendStatus, setResendStatus] = useState<"idle" | "loading" | "sent">("idle");
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -30,11 +32,26 @@ export default function SignInPage() {
     setLoading(false);
 
     if (error) {
-      setError(error.message ?? "Invalid email or password.");
+      const msg = error.message?.toLowerCase() ?? "";
+      if (msg.includes("not verified") || msg.includes("verify")) {
+        setUnverified(true);
+      } else {
+        setError(error.message ?? "Invalid email or password.");
+      }
       return;
     }
 
     router.push("/home");
+  }
+
+  async function handleResend() {
+    setResendStatus("loading");
+    await fetch("/api/auth/send-verification-email", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ email: form.email, callbackURL: "/home" }),
+    });
+    setResendStatus("sent");
   }
 
   return (
@@ -82,7 +99,7 @@ export default function SignInPage() {
               Password <span className="text-red-500">*</span>
             </label>
             <Link
-              href="#"
+              href="/forgot-password"
               className="text-xs font-semibold text-gray-500 dark:text-slate-400 hover:text-gray-900
                          dark:hover:text-white transition-colors"
             >
@@ -125,6 +142,37 @@ export default function SignInPage() {
             </button>
           </div>
         </div>
+
+        {/* Email not verified banner */}
+        {unverified && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/40
+                          bg-amber-50 dark:bg-amber-900/20 px-4 py-3 space-y-2">
+            <div className="flex items-start gap-2.5">
+              <span
+                className="rounded-full flex-shrink-0 mt-1"
+                style={{ width: 6, height: 6, backgroundColor: "#f59e0b", display: "inline-block" }}
+              />
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Email not verified
+              </p>
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-400 pl-[18px]">
+              Check your inbox for the verification link, or{" "}
+              {resendStatus === "sent" ? (
+                <span className="font-semibold">email sent — check your inbox.</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendStatus === "loading"}
+                  className="font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200 disabled:opacity-50 transition-colors"
+                >
+                  {resendStatus === "loading" ? "sending…" : "resend it"}
+                </button>
+              )}
+            </p>
+          </div>
+        )}
 
         {/* Error */}
         {error && (
