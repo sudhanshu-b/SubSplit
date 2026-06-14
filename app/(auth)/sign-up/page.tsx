@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/auth-client";
+import Spinner from "@/components/spinner";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push("/");
+    router.push("/home");
   }
 
   // Live password requirement checks
@@ -183,10 +184,12 @@ export default function SignUpPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-gray-900 dark:bg-white px-4 py-3.5 text-sm font-bold
+          className="w-full flex items-center justify-center gap-2.5 rounded-xl
+                     bg-gray-900 dark:bg-white px-4 py-3.5 text-sm font-bold
                      text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-slate-100
-                     disabled:opacity-50 disabled:cursor-not-allowed transition mt-2"
+                     disabled:opacity-60 disabled:cursor-not-allowed transition mt-2"
         >
+          {loading && <Spinner className="w-4 h-4" />}
           {loading ? "Creating account…" : "Create account →"}
         </button>
 

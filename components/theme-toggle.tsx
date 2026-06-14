@@ -25,9 +25,12 @@ export default function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
+    // Only sync the React state — don't re-apply the theme.
+    // The inline <script> in layout.tsx already applied the correct theme on
+    // page load, so calling applyTheme() here would cause a flash/switch
+    // every time this component mounts (e.g. when the avatar dropdown opens).
     const initialTheme = getInitialTheme();
     setTheme(initialTheme);
-    applyTheme(initialTheme);
   }, []);
 
   function toggleTheme() {

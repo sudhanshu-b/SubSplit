@@ -5,36 +5,37 @@
 @layer base {
   html {
     color-scheme: light;
-    background: #f8fafc;
+    /* zinc-50 — matches the app's page background */
+    background: #fafafa;
   }
 
   html.dark {
     color-scheme: dark;
-    background: #020617;
+    /* matches bg-[#0e0e10] used throughout the app */
+    background: #0e0e10;
   }
 
   body {
-    min-height: 100vh;
-    background: #f8fafc;
+    background: #fafafa;
     color: #111827;
     transition: background-color 150ms ease, color 150ms ease;
   }
 
   html.dark body {
-    background: #020617;
-    color: #f8fafc;
+    background: #0e0e10;
+    color: #f4f4f5;
   }
 
+  /* Inputs/selects/textareas: let component classes set bg, strip browser defaults */
   input,
   select,
   textarea {
-    background-color: #ffffff;
+    background-color: transparent;
   }
 
-  html.dark input,
-  html.dark select,
-  html.dark textarea {
-    background-color: #0f172a;
+  /* Remove browser default focus outline globally — our components use border-color instead */
+  *:focus-visible {
+    outline: none;
   }
 }
 

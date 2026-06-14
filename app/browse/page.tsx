@@ -1,31 +1,24 @@
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { subscription, service, appUser, membership } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
-import { Suspense } from "react";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import BrowseFilters from "@/components/browse-filters";
-import ListingCard from "@/components/listing-card";
+import { eq, and, sql, desc } from "drizzle-orm";
+import BrowseClient from "@/components/browse-client";
+import { BrowseCardSkeleton } from "@/components/browse-card";
+import type { BrowseListing } from "@/components/browse-card";
 
-type SearchParams = Promise<{ serviceId?: string; region?: string }>;
+export const metadata = { title: "Browse · SubSplit" };
 
-export default async function BrowsePage({ searchParams }: { searchParams: SearchParams }) {
-  // Protect this page — only signed-in users can browse listings.
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
+type SearchParams = Promise<{ q?: string }>;
 
-  const { serviceId, region } = await searchParams;
+const PAGE_SIZE = 12;
 
-  const services = await db
-    .select({ id: service.id, name: service.name })
-    .from(service)
-    .orderBy(service.name);
-
-  const filters = [eq(subscription.status, "active")];
-  if (serviceId) filters.push(eq(subscription.serviceId, serviceId));
-  if (region) filters.push(eq(subscription.region, region.toUpperCase()));
-
+async function getInitialListings(query: string): Promise<{
+  listings: BrowseListing[];
+  hasMore:  boolean;
+}> {
   const activeMemberCounts = db
     .select({
       subscriptionId: membership.subscriptionId,
@@ -36,63 +29,101 @@ export default async function BrowsePage({ searchParams }: { searchParams: Searc
     .groupBy(membership.subscriptionId)
     .as("active_member_counts");
 
-  const listings = await db
+  const baseFilter = eq(subscription.status, "active");
+
+  const searchFilter = query
+    ? sql`(
+        ${subscription.title}       ilike ${"%" + query + "%"}
+        or ${service.name}          ilike ${"%" + query + "%"}
+        or coalesce(${subscription.description}, '') ilike ${"%" + query + "%"}
+      )`
+    : undefined;
+
+  const where = searchFilter ? and(baseFilter, searchFilter) : baseFilter;
+
+  // Popular (no query): most-filled listings first, then newest
+  // Search: newest first
+  const orderBy = query
+    ? [desc(subscription.createdAt)]
+    : [desc(sql`coalesce(${activeMemberCounts.count}, 0)`), desc(subscription.createdAt)];
+
+  const rows = await db
     .select({
-      id: subscription.id,
-      title: subscription.title,
-      description: subscription.description,
-      totalSeats: subscription.totalSeats,
-      pricePerSeat: subscription.pricePerSeat,
-      currency: subscription.currency,
-      region: subscription.region,
-      serviceName: service.name,
-      hostName: appUser.name,
+      id:            subscription.id,
+      title:         subscription.title,
+      description:   subscription.description,
+      totalSeats:    subscription.totalSeats,
+      pricePerSeat:  subscription.pricePerSeat,
+      currency:      subscription.currency,
+      region:        subscription.region,
+      serviceName:   service.name,
+      hostName:      appUser.name,
       activeMembers: sql<number>`coalesce(${activeMemberCounts.count}, 0)`,
     })
     .from(subscription)
-    .innerJoin(service, eq(subscription.serviceId, service.id))
-    .innerJoin(appUser, eq(subscription.hostId, appUser.id))
+    .innerJoin(service,           eq(subscription.serviceId, service.id))
+    .innerJoin(appUser,           eq(subscription.hostId, appUser.id))
     .leftJoin(activeMemberCounts, eq(subscription.id, activeMemberCounts.subscriptionId))
-    .where(and(...filters))
-    .orderBy(subscription.createdAt);
+    .where(where)
+    .orderBy(...orderBy)
+    .limit(PAGE_SIZE + 1);
+
+  const hasMore  = rows.length > PAGE_SIZE;
+  const listings = rows.slice(0, PAGE_SIZE).map((r) => ({
+    id:             r.id,
+    title:          r.title,
+    description:    r.description,
+    serviceName:    r.serviceName,
+    hostName:       r.hostName,
+    pricePerSeat:   Number(r.pricePerSeat ?? 0),
+    currency:       r.currency,
+    totalSeats:     r.totalSeats,
+    remainingSeats: r.totalSeats - r.activeMembers,
+    region:         r.region,
+  }));
+
+  return { listings, hasMore };
+}
+
+// ── Skeleton fallback while Suspense resolves ──────────────────────────────
+function BrowseSkeleton() {
+  return (
+    <div>
+      <div className="mb-8">
+        <div className="h-3 w-20 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse mb-3" />
+        <div className="h-8 w-52 rounded-full bg-zinc-200 dark:bg-zinc-800 animate-pulse mb-2" />
+        <div className="h-3 w-36 rounded-full bg-zinc-100 dark:bg-zinc-800/60 animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <BrowseCardSkeleton key={i} index={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+export default async function BrowsePage({ searchParams }: { searchParams: SearchParams }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  const { q = "" } = await searchParams;
+  const query = q.trim();
+
+  const { listings, hasMore } = await getInitialListings(query);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Browse listings</h1>
-        <p className="text-gray-500">Find a shared subscription plan and split the cost.</p>
-      </div>
-
-      <div className="mb-6">
-        <Suspense>
-          <BrowseFilters services={services} />
+    <main className="min-h-[calc(100vh-80px)] bg-zinc-50 dark:bg-[#0e0e10]">
+      <div className="max-w-5xl mx-auto px-5 py-12">
+        <Suspense fallback={<BrowseSkeleton />}>
+          <BrowseClient
+            initialListings={listings}
+            initialHasMore={hasMore}
+            query={query}
+          />
         </Suspense>
       </div>
-
-      {listings.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-lg font-medium">No listings found.</p>
-          <p className="text-sm mt-1">Try adjusting your filters or check back later.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              id={listing.id}
-              title={listing.title}
-              description={listing.description}
-              serviceName={listing.serviceName}
-              hostName={listing.hostName}
-              pricePerSeat={listing.pricePerSeat}
-              currency={listing.currency}
-              totalSeats={listing.totalSeats}
-              remainingSeats={listing.totalSeats - listing.activeMembers}
-              region={listing.region}
-            />
-          ))}
-        </div>
-      )}
     </main>
   );
 }

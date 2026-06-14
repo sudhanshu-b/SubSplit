@@ -652,7 +652,7 @@ function LandingNav() {
             /* Logged in — link to the app */
             <motion.div whileTap={{ scale: 0.96 }}>
               <Link
-                href="/browse"
+                href="/home"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold
                            bg-gray-900 dark:bg-white text-white dark:text-gray-900
                            hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors"
