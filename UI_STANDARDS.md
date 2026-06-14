@@ -1,4 +1,4 @@
-# SubSplit — UI Design Standards
+# LetsSplit — UI Design Standards
 
 > Inspired by the editorial minimalism of Mobbin's landing page. Clean, confident,
 > near-monochromatic with tight typography and smooth motion. Every design decision
@@ -79,7 +79,7 @@ Geometric, clean, rounded terminals. Excellent weight range from 400 to 800.
 | `--color-border` | `#e2e8f0` (slate-200) | `#1e293b` (slate-800) | Dividers, card borders |
 
 > **Key insight from Mobbin:** Use `#141414` (not pure `#000000`) for text.  
-> SubSplit equivalent → `#111827` (gray-900). Softer on eyes, still authoritative.
+> LetsSplit equivalent → `#111827` (gray-900). Softer on eyes, still authoritative.
 
 ### Brand / Accent Colors
 
@@ -130,7 +130,7 @@ Use Tailwind's default spacing. Key values:
 ## 4. Navbar
 
 > **Mobbin's signature:** A floating **pill navbar** with frosted-glass blur.  
-> SubSplit uses this same pattern for its top navigation.
+> LetsSplit uses this same pattern for its top navigation.
 
 ### Design Spec
 
@@ -163,7 +163,7 @@ Margin top:     12px (floats above page content)
   ">
     {/* Logo */}
     <a href="/" className="flex items-center gap-2 font-bold text-lg text-gray-900 dark:text-white">
-      SubSplit
+      LetsSplit
     </a>
 
     {/* Nav links */}
@@ -590,7 +590,7 @@ function AnimatedCard() {
 
 ## 10. Dark Mode
 
-SubSplit uses a **class-based dark mode** (`html.dark`), already configured in `globals.css`.
+LetsSplit uses a **class-based dark mode** (`html.dark`), already configured in `globals.css`.
 
 ### Dark Mode Mapping
 
@@ -712,5 +712,5 @@ Animate in:      initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} tran
 
 ---
 
-*SubSplit UI Standards v1.0 — Inspired by Mobbin's editorial minimalism.*  
+*LetsSplit UI Standards v1.0 — Inspired by Mobbin's editorial minimalism.*  
 *Stack: Next.js 16 · React 19 · Tailwind CSS v4 · Framer Motion 12 · GSAP 3 · Outfit (Google Fonts)*

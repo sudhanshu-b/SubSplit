@@ -12,7 +12,7 @@ const font = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: "SubSplit",
+  title: "LetsSplit",
   description: "Split subscriptions with others",
   icons: {
     icon: "/favicon.ico",

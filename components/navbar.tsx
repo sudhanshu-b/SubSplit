@@ -65,9 +65,9 @@ export default function Navbar() {
         {/* ── Logo icon ── */}
         <Link href="/home" className="flex-shrink-0 flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-light-icon.png" alt="SubSplit" className="h-8 w-8 object-contain dark:hidden" />
+          <img src="/logo-light-icon.png" alt="LetsSplit" className="h-8 w-8 object-contain dark:hidden" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-dark-icon.png"  alt="SubSplit" className="h-8 w-8 object-contain hidden dark:block" />
+          <img src="/logo-dark-icon.png"  alt="LetsSplit" className="h-8 w-8 object-contain hidden dark:block" />
         </Link>
 
         {/* ── Search input ── */}

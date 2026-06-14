@@ -85,7 +85,7 @@ const TESTIMONIALS = [
   },
   {
     name: "Divya Nair", role: "Teacher, Kochi",
-    text: "Simple, clean, honest. SubSplit does exactly what it promises. I've recommended it to my entire family.",
+    text: "Simple, clean, honest. LetsSplit does exactly what it promises. I've recommended it to my entire family.",
     initials: "DN", color: "#10b981",
   },
   {
@@ -326,7 +326,7 @@ function MarqueeRow({
 
 // ─── Inline UI Mockups ────────────────────────────────────────────────────────
 
-/** Browse listings mockup — rich 3-card preview of the SubSplit browse page */
+/** Browse listings mockup — rich 3-card preview of the LetsSplit browse page */
 function BrowseMockup() {
   return (
     <div className="w-full bg-gray-100 dark:bg-slate-900 rounded-2xl p-1.5 shadow-2xl
@@ -347,7 +347,7 @@ function BrowseMockup() {
               <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.657-1.343-3-3-3S6 9.343 6 11s1.343 3 3 3 3-1.343 3-3zm0 0c0 3.314 2.686 6 6 6" />
               </svg>
-              <span className="text-[11px] text-gray-400 dark:text-slate-500 truncate">subsplit.app/browse</span>
+              <span className="text-[11px] text-gray-400 dark:text-slate-500 truncate">letssplit.in/browse</span>
             </div>
           </div>
           <div className="w-16" />
@@ -356,7 +356,7 @@ function BrowseMockup() {
         {/* ── In-app navbar ── */}
         <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-100 dark:border-slate-800">
           <div className="flex items-center gap-5">
-            <span className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">SubSplit</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">LetsSplit</span>
             {["Browse", "My Plans", "Messages"].map((l) => (
               <span key={l} className={`text-xs font-semibold ${l === "Browse"
                 ? "text-gray-900 dark:text-white"
@@ -627,9 +627,9 @@ function LandingNav() {
         {/* Logo — switches between light/dark variants based on theme */}
         <Link href="/" className="flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-light.png" alt="SubSplit" className="h-10 w-auto object-contain dark:hidden" />
+          <img src="/logo-light.png" alt="LetsSplit" className="h-10 w-auto object-contain dark:hidden" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-dark.png"  alt="SubSplit" className="h-10 w-auto object-contain hidden dark:block" />
+          <img src="/logo-dark.png"  alt="LetsSplit" className="h-10 w-auto object-contain hidden dark:block" />
         </Link>
 
         {/* Centre nav links */}
@@ -1432,7 +1432,7 @@ function Footer() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo-dark.png"
-              alt="SubSplit"
+              alt="LetsSplit"
               className="h-12 w-auto object-contain mb-3"
             />
             <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
@@ -1459,7 +1459,7 @@ function Footer() {
           </div>
         </div>
         <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between gap-4">
-          <p className="text-xs text-gray-600">© SubSplit 2024–2025. All rights reserved.</p>
+          <p className="text-xs text-gray-600">© LetsSplit 2024–2025. All rights reserved.</p>
           <div className="flex gap-6">
             {["Privacy policy", "Terms"].map((l) => (
               <Link key={l} href="#" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">

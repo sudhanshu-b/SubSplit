@@ -193,7 +193,7 @@ export default function SignInPage() {
       </div>
 
       <p className="text-[11px] text-center text-gray-400 dark:text-slate-500 mt-6">
-        Protected by SubSplit security. We never share your data.
+        Protected by LetsSplit security. We never share your data.
       </p>
 
     </div>

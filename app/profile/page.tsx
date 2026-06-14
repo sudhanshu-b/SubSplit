@@ -29,7 +29,7 @@ export default async function ProfilePage() {
       <div className="mb-8">
         <h1 className="mb-1 text-3xl font-bold text-gray-900">Profile</h1>
         <p className="text-sm text-gray-500">
-          View the account details attached to your SubSplit profile.
+          View the account details attached to your LetsSplit profile.
         </p>
       </div>
 

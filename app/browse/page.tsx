@@ -9,7 +9,7 @@ import BrowseClient from "@/components/browse-client";
 import { BrowseCardSkeleton } from "@/components/browse-card";
 import type { BrowseListing } from "@/components/browse-card";
 
-export const metadata = { title: "Browse · SubSplit" };
+export const metadata = { title: "Browse · LetsSplit" };
 
 type SearchParams = Promise<{ q?: string }>;
 

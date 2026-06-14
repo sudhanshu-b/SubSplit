@@ -48,7 +48,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo-dark.png"
-              alt="SubSplit"
+              alt="LetsSplit"
               className="h-14 w-auto object-contain"
             />
           </div>

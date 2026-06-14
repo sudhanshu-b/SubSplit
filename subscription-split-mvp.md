@@ -1,4 +1,4 @@
-# SubSplit — Project Overview (MVP)
+# LetsSplit — Project Overview (MVP)
 
 ## The Idea
 

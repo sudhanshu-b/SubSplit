@@ -6,7 +6,7 @@ import { service } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import CreateListingForm from "@/components/create-listing-form";
 
-export const metadata = { title: "New listing · SubSplit" };
+export const metadata = { title: "New listing · LetsSplit" };
 
 export default async function NewListingPage() {
   const session = await auth.api.getSession({ headers: await headers() });
