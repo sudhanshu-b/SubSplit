@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/navbar";
 
 // Routes that manage their own layout — no shared navbar or spacer needed
-const NO_NAV_ROUTES = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password"];
+const NO_NAV_ROUTES = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/listings/new"];
 
 /**
  * Renders the shared app Navbar on every route EXCEPT the landing page and

@@ -33,6 +33,8 @@ export default async function ListingDetailPage({ params }: { params: Params }) 
       serviceCategory: service.category,
       hostId:          appUser.id,
       hostName:        appUser.name,
+      durationDays:    subscription.durationDays,
+      paymentTerms:    subscription.paymentTerms,
     })
     .from(subscription)
     .innerJoin(service,  eq(subscription.serviceId, service.id))

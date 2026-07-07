@@ -60,6 +60,8 @@ export type ListingData = {
   serviceCategory: string | null;
   hostId: string;
   hostName: string;
+  durationDays: number | null;
+  paymentTerms: string | null;
 };
 
 export type PendingRequest = {
@@ -97,6 +99,23 @@ function SlotDots({ active, total }: { active: number; total: number }) {
 function formatDate(raw: string | null) {
   if (!raw) return null;
   return new Date(raw).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+}
+
+function durationLabel(days: number | null) {
+  if (!days) return null;
+  if (days === 30)  return "Monthly";
+  if (days === 60)  return "2 Months";
+  if (days === 90)  return "Quarterly";
+  if (days === 180) return "6 Months";
+  if (days === 365) return "Annual";
+  return `${days} days`;
+}
+
+function paymentLabel(terms: string | null) {
+  if (!terms) return null;
+  if (terms === "upfront")  return "Full upfront";
+  if (terms === "split_30") return "50% now · 50% after 30 days";
+  return terms;
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -223,7 +242,9 @@ export default function ListingDrawer({
                     {price === 0 ? "Free" : `₹${price}`}
                   </span>
                   {price !== 0 && (
-                    <span className="text-base text-zinc-400">/ seat · mo</span>
+                    <span className="text-base text-zinc-400">
+                      / seat · {durationLabel(listing.durationDays) ?? "mo"}
+                    </span>
                   )}
                 </motion.div>
 
@@ -364,6 +385,20 @@ export default function ListingDrawer({
                   <span>
                     ₹{Math.round(parseFloat(listing.priceTotal))} full plan
                   </span>
+                  {listing.durationDays && (
+                    <>
+                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                      <span className="font-semibold text-zinc-600 dark:text-zinc-400">
+                        {durationLabel(listing.durationDays)}
+                      </span>
+                    </>
+                  )}
+                  {listing.paymentTerms && (
+                    <>
+                      <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                      <span>{paymentLabel(listing.paymentTerms)}</span>
+                    </>
+                  )}
                   {listing.region && (
                     <>
                       <span className="text-zinc-300 dark:text-zinc-700">·</span>

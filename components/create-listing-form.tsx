@@ -14,20 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const EASE = [0.22, 1, 0.36, 1] as const;
-const STEP_LABELS = ["Service", "Details", "Pricing", "Review"];
+const EASE        = [0.22, 1, 0.36, 1] as const;
+const STEP_LABELS = ["Service", "Details", "Seats", "Payment", "Review"];
 const MAX_SEATS   = 10;
-
-const CURRENCIES = [
-  { code: "INR", symbol: "₹" },
-  { code: "USD", symbol: "$" },
-  { code: "EUR", symbol: "€" },
-  { code: "GBP", symbol: "£" },
-  { code: "CAD", symbol: "C$" },
-  { code: "AUD", symbol: "A$" },
-] as const;
-
-const REGION_OPTIONS = ["IN","US","GB","CA","AU","EU","SG","JP","DE","FR"];
+const CURRENCY    = { code: "INR", symbol: "₹" };
 
 const SERVICE_CATEGORIES = [
   "Entertainment","Music & Audio","Cloud Storage","Productivity",
@@ -59,6 +49,14 @@ function getServiceMeta(name: string): { slug: string; bg: string } {
 // ── Types ──────────────────────────────────────────────────────────────────
 type DbService = { id: string; name: string; category: string | null };
 
+const DURATION_OPTIONS = [
+  { days: 30,  label: "Monthly",   sub: "30 days"  },
+  { days: 60,  label: "2 Months",  sub: "60 days"  },
+  { days: 90,  label: "Quarterly", sub: "90 days"  },
+  { days: 180, label: "6 Months",  sub: "180 days" },
+  { days: 365, label: "Annual",    sub: "365 days" },
+] as const;
+
 type FormData = {
   serviceId:             string;   // "__custom__" = user-typed
   customServiceName:     string;
@@ -68,8 +66,8 @@ type FormData = {
   description:           string;
   totalSeats:            number;
   priceTotal:            string;
-  currency:              string;
-  region:                string;
+  durationDays:          number;
+  paymentTerms:          "upfront" | "split_30" | "";
 };
 
 // ── Step progress bar ──────────────────────────────────────────────────────
@@ -322,33 +320,29 @@ function Step2({
   );
 }
 
-// ── Step 3 — Seats & pricing ───────────────────────────────────────────────
+// ── Step 3 — Seats ────────────────────────────────────────────────────────
 function Step3({
   form, onChange,
 }: {
   form:     FormData;
   onChange: (p: Partial<FormData>) => void;
 }) {
-  const priceNum = parseFloat(form.priceTotal) || 0;
-  const perSeat  = form.totalSeats > 0 && priceNum > 0
-    ? (priceNum / form.totalSeats).toFixed(2)
-    : null;
-  const sym      = CURRENCIES.find((c) => c.code === form.currency)?.symbol ?? "";
+  const memberCount = form.totalSeats; // seats are for members; host is separate
 
   return (
     <div>
       <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-1">
-        Seats &amp; pricing
+        Member seats
       </h2>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-7">
-        How many people can join, and what does the plan cost?
+        How many members can join your plan? You (the host) are not counted.
       </p>
 
-      {/* Seat slider */}
       <div className="mb-7">
-        <div className="flex items-baseline justify-between mb-4">
+        {/* Count header */}
+        <div className="flex items-baseline justify-between mb-3">
           <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Total seats
+            Member seats
           </label>
           <motion.span
             key={form.totalSeats}
@@ -361,25 +355,66 @@ function Step3({
           </motion.span>
         </div>
 
-        {/* Dot visualisation */}
-        <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-          {Array.from({ length: MAX_SEATS }).map((_, i) => (
-            <motion.span
-              key={i}
-              animate={{
-                scale:   i < form.totalSeats ? 1   : 0.65,
-                opacity: i < form.totalSeats ? 1   : 0.2,
-              }}
-              transition={{ duration: 0.18, delay: i * 0.02 }}
-              className={`w-4 h-4 rounded-full transition-colors duration-200
-                         ${i < form.totalSeats ? "bg-zinc-900 dark:bg-zinc-100" : "bg-zinc-200 dark:bg-zinc-700"}`}
-            />
-          ))}
+        {/* "You + X members" label */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={form.totalSeats}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center gap-1.5 mb-4"
+          >
+            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">You</span>
+            <span className="text-zinc-400 dark:text-zinc-600 text-sm">+</span>
+            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {memberCount} member{memberCount !== 1 ? "s" : ""}
+            </span>
+            <span className="ml-auto text-[11px] text-zinc-400 dark:text-zinc-500">
+              {memberCount + 1} total
+            </span>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Avatar visualisation */}
+        <div className="flex items-end gap-2 mb-4 flex-wrap">
+          {/* Host avatar — always active */}
+          <div className="flex flex-col items-center gap-1" title="You (host)">
+            <div className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white dark:text-zinc-900" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">You</span>
+          </div>
+
+          {/* Member avatars */}
+          {Array.from({ length: MAX_SEATS }).map((_, i) => {
+            const active = i < form.totalSeats;
+            return (
+              <motion.div
+                key={i}
+                className="flex flex-col items-center gap-1"
+                animate={{ scale: active ? 1 : 0.75, opacity: active ? 1 : 0.2 }}
+                transition={{ duration: 0.18, delay: i * 0.02 }}
+              >
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200
+                                ${active ? "bg-green-400" : "bg-zinc-200 dark:bg-zinc-700"}`}>
+                  <svg className={`w-5 h-5 transition-colors duration-200 ${active ? "text-white" : "text-zinc-400 dark:text-zinc-500"}`}
+                       viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                  </svg>
+                </div>
+                {active && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-green-500">M{i + 1}</span>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
         <input
           type="range"
-          min={2}
+          min={1}
           max={MAX_SEATS}
           step={1}
           value={form.totalSeats}
@@ -388,30 +423,71 @@ function Step3({
                     bg-zinc-200 dark:bg-zinc-800 accent-zinc-900 dark:accent-zinc-100"
         />
         <div className="flex justify-between mt-1.5">
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-600 font-medium">2</span>
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-600 font-medium">{MAX_SEATS}</span>
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-600 font-medium">1 member</span>
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-600 font-medium">{MAX_SEATS} members</span>
         </div>
       </div>
 
-      {/* Price row */}
+      <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 px-4 py-3">
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+          <span className="font-bold text-zinc-900 dark:text-zinc-100">Host seat is yours</span> — the {memberCount} slot{memberCount !== 1 ? "s" : ""} above are for members who join your listing. You control access and can remove members at any time.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Step 4 — Payment ──────────────────────────────────────────────────────
+function Step4({
+  form, onChange,
+}: {
+  form:     FormData;
+  onChange: (p: Partial<FormData>) => void;
+}) {
+  const priceNum   = parseFloat(form.priceTotal) || 0;
+  const perSeat    = form.totalSeats > 0 && priceNum > 0
+    ? (priceNum / form.totalSeats).toFixed(2)
+    : null;
+  const needsTerms = form.durationDays > 30;
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-1">
+        Pricing &amp; payment
+      </h2>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-7">
+        Set the plan cost, duration, and how members will pay.
+      </p>
+
+      {/* Total cost — INR locked */}
       <div className="mb-4">
         <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-          Total monthly cost <span className="text-red-400">*</span>
+          Total plan cost <span className="text-red-400">*</span>
         </label>
         <div className="flex gap-2">
-          <Select
-            value={form.currency}
-            onValueChange={(v) => onChange({ currency: v })}
-          >
-            <SelectTrigger className="w-28 flex-shrink-0 font-semibold">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CURRENCIES.map((c) => (
-                <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 px-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700
+                          bg-zinc-50 dark:bg-zinc-800 text-sm font-bold text-zinc-500 dark:text-zinc-400
+                          select-none shrink-0">
+            {/* India flag */}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" className="w-5 h-3.5 rounded-sm overflow-hidden shrink-0">
+              <rect width="900" height="600" fill="#138808"/>
+              <rect width="900" height="400" fill="#fff"/>
+              <rect width="900" height="200" fill="#FF9933"/>
+              {/* Ashoka Chakra */}
+              <circle cx="450" cy="300" r="90" fill="none" stroke="#000080" strokeWidth="9"/>
+              <circle cx="450" cy="300" r="13.5" fill="#000080"/>
+              {Array.from({ length: 24 }).map((_, i) => {
+                const angle = (i * 360) / 24;
+                const rad   = (angle * Math.PI) / 180;
+                const x1    = 450 + 13.5 * Math.sin(rad);
+                const y1    = 300 - 13.5 * Math.cos(rad);
+                const x2    = 450 + 90  * Math.sin(rad);
+                const y2    = 300 - 90  * Math.cos(rad);
+                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#000080" strokeWidth="4.5"/>;
+              })}
+            </svg>
+            ₹ INR
+          </div>
           <Input
             type="number"
             min={1}
@@ -447,43 +523,126 @@ function Step3({
               transition={{ duration: 0.18 }}
               className="text-xl font-bold tabular-nums text-zinc-900 dark:text-zinc-100"
             >
-              {sym}{perSeat}
-              <span className="text-sm font-medium text-zinc-400 dark:text-zinc-500">/mo</span>
+              ₹{perSeat}
             </motion.span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Region chips */}
-      <div>
+      {/* Plan duration */}
+      <div className="mb-6">
         <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-          Region{" "}
-          <span className="text-zinc-300 dark:text-zinc-600 font-normal normal-case tracking-normal">optional</span>
+          Plan duration <span className="text-red-400">*</span>
         </label>
-        <div className="flex flex-wrap gap-2">
-          {REGION_OPTIONS.map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => onChange({ region: form.region === r ? "" : r })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider
-                         transition-all duration-150
-                         ${form.region === r
-                           ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                           : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                         }`}
-            >
-              {r}
-            </button>
-          ))}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {DURATION_OPTIONS.map((opt) => {
+            const selected = form.durationDays === opt.days;
+            return (
+              <button
+                key={opt.days}
+                type="button"
+                onClick={() => onChange({
+                  durationDays: opt.days,
+                  paymentTerms: opt.days <= 30 ? "" : form.paymentTerms,
+                })}
+                className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-3
+                           border transition-all duration-150
+                           ${selected
+                             ? "border-2 border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800/70"
+                             : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
+                           }`}
+              >
+                <span className={`text-xs font-bold transition-colors duration-150
+                                 ${selected ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300"}`}>
+                  {opt.label}
+                </span>
+                <span className={`text-[10px] transition-colors duration-150
+                                 ${selected ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-400 dark:text-zinc-600"}`}>
+                  {opt.sub}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
+
+      {/* Payment terms — only when duration > 30 days */}
+      <AnimatePresence>
+        {needsTerms && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.26, ease: EASE }}
+            style={{ overflow: "hidden" }}
+          >
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+              Payment terms <span className="text-red-400">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: "upfront"  as const, title: "Full upfront",   desc: "Member pays the full amount before getting access.", icon: "↑" },
+                { value: "split_30" as const, title: "Split payment",  desc: "50% now to join · 50% after 30 days.",               icon: "½" },
+              ]).map((opt) => {
+                const selected = form.paymentTerms === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => onChange({ paymentTerms: opt.value })}
+                    className={`flex flex-col items-start gap-1.5 rounded-xl px-4 py-3.5 text-left
+                               border transition-all duration-150
+                               ${selected
+                                 ? "border-2 border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800/70"
+                                 : "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
+                               }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className={`text-sm font-bold transition-colors duration-150
+                                       ${selected ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300"}`}>
+                        {opt.title}
+                      </span>
+                      <span className={`text-base font-black leading-none transition-colors duration-150
+                                       ${selected ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-300 dark:text-zinc-600"}`}>
+                        {opt.icon}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-snug">
+                      {opt.desc}
+                    </span>
+                    {selected && (
+                      <motion.span
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-600 dark:text-green-400"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                        Selected
+                      </motion.span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Region — currently India only, UI hidden */}
+      {/* TODO: uncomment when multi-region is supported
+      <div className="mt-6">
+        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+          Region
+        </label>
+        ...region chips...
+      </div>
+      */}
     </div>
   );
 }
 
-// ── Step 4 — Review ────────────────────────────────────────────────────────
-function Step4({
+// ── Step 5 — Review ────────────────────────────────────────────────────────
+function Step5({
   form, services, onEdit,
 }: {
   form:     FormData;
@@ -500,21 +659,21 @@ function Step4({
   const perSeat  = form.totalSeats > 0 && priceNum > 0
     ? (priceNum / form.totalSeats).toFixed(2)
     : null;
-  const sym = CURRENCIES.find((c) => c.code === form.currency)?.symbol ?? "";
 
   type ReviewRow = { label: string; value: string; step: number };
   const rows: ReviewRow[] = [
-    { label: "Title",         value: form.title,                          step: 2 },
+    { label: "Title",       value: form.title,                                                                                          step: 2 },
     ...(form.description
-      ? [{ label: "Description", value: form.description,                 step: 2 }]
+      ? [{ label: "Desc",   value: form.description,                                                                                    step: 2 }]
       : []),
-    { label: "Total seats",   value: String(form.totalSeats),             step: 3 },
-    { label: "Plan cost",     value: `${sym}${priceNum.toFixed(2)}/mo`,   step: 3 },
+    { label: "Seats",       value: `You + ${form.totalSeats} member${form.totalSeats !== 1 ? "s" : ""}`,                               step: 3 },
+    { label: "Cost",        value: `₹${priceNum.toFixed(2)}`,                                                                          step: 4 },
     ...(perSeat
-      ? [{ label: "Per seat", value: `${sym}${perSeat}/mo`,               step: 3 }]
+      ? [{ label: "Per seat", value: `₹${perSeat} / member`,                                                                           step: 4 }]
       : []),
-    ...(form.region
-      ? [{ label: "Region",   value: form.region.toUpperCase(),           step: 3 }]
+    { label: "Duration",    value: DURATION_OPTIONS.find((d) => d.days === form.durationDays)?.label ?? `${form.durationDays} days`,   step: 4 },
+    ...(form.durationDays > 30 && form.paymentTerms
+      ? [{ label: "Payment", value: form.paymentTerms === "upfront" ? "Full upfront" : "50% now · 50% after 30 days",                  step: 4 }]
       : []),
   ];
 
@@ -532,7 +691,7 @@ function Step4({
                       bg-zinc-50 dark:bg-zinc-800/60
                       border border-zinc-100 dark:border-zinc-800
                       px-4 py-3 mb-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
              style={{ backgroundColor: bg }}>
           {iconUrl
             // eslint-disable-next-line @next/next/no-img-element
@@ -545,7 +704,7 @@ function Step4({
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{svcName}</p>
         </div>
         <button type="button" onClick={() => onEdit(1)}
-                className="ml-auto text-xs font-semibold text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors flex-shrink-0">
+                className="ml-auto text-xs font-semibold text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors shrink-0">
           Change
         </button>
       </div>
@@ -555,15 +714,15 @@ function Step4({
         {rows.map((row) => (
           <div key={row.label}
                className="flex items-start justify-between gap-4 px-4 py-3 bg-zinc-50 dark:bg-zinc-800/40">
-            <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 flex-shrink-0 mt-0.5 w-24">
+            <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5 w-20">
               {row.label}
             </span>
             <div className="flex items-start gap-3 flex-1 min-w-0 justify-end">
-              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 text-right break-words">
+              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 text-right">
                 {row.value}
               </span>
               <button type="button" onClick={() => onEdit(row.step)}
-                      className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors flex-shrink-0 mt-0.5">
+                      className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors shrink-0 mt-0.5">
                 Edit
               </button>
             </div>
@@ -593,8 +752,8 @@ export default function CreateListingForm({ services }: { services: DbService[] 
     description:           "",
     totalSeats:            4,
     priceTotal:            "",
-    currency:              "INR",
-    region:                "",
+    durationDays:          30,
+    paymentTerms:          "",
   });
 
   function patch(p: Partial<FormData>) {
@@ -615,8 +774,12 @@ export default function CreateListingForm({ services }: { services: DbService[] 
         return "Please enter the service name.";
     }
     if (step === 2 && !form.title.trim()) return "Please enter a listing title.";
-    if (step === 3 && (!form.priceTotal || parseFloat(form.priceTotal) <= 0))
-      return "Please enter the total plan cost.";
+    if (step === 4) {
+      if (!form.priceTotal || parseFloat(form.priceTotal) <= 0)
+        return "Please enter the total plan cost.";
+      if (form.durationDays > 30 && !form.paymentTerms)
+        return "Please select payment terms for this plan duration.";
+    }
     return "";
   }
 
@@ -624,7 +787,6 @@ export default function CreateListingForm({ services }: { services: DbService[] 
     const e = validate();
     if (e) { setError(e); return; }
     setNavigating(true);
-    // Brief spinner so the button gives tactile feedback before animating out
     setTimeout(() => {
       setNavigating(false);
       goTo(step + 1);
@@ -640,16 +802,18 @@ export default function CreateListingForm({ services }: { services: DbService[] 
 
     const isCustom = form.serviceId === "__custom__";
     const body = {
-      serviceId:             isCustom ? undefined                            : form.serviceId,
-      customServiceName:     isCustom ? form.customServiceName.trim()        : undefined,
+      serviceId:             isCustom ? undefined                                          : form.serviceId,
+      customServiceName:     isCustom ? form.customServiceName.trim()                      : undefined,
       customServiceCategory: isCustom && form.customServiceCategory ? form.customServiceCategory : undefined,
       customServiceUrl:      isCustom && form.customServiceUrl.trim() ? form.customServiceUrl.trim() : undefined,
       title:                 form.title.trim(),
       description:           form.description.trim() || undefined,
       totalSeats:            form.totalSeats,
       priceTotal:            form.priceTotal,
-      currency:              form.currency,
-      region:                form.region.trim().toUpperCase() || undefined,
+      currency:              CURRENCY.code,   // locked to INR
+      region:                "IN",            // India only for now
+      durationDays:          form.durationDays,
+      paymentTerms:          form.durationDays > 30 ? form.paymentTerms : undefined,
     };
 
     try {
@@ -679,7 +843,25 @@ export default function CreateListingForm({ services }: { services: DbService[] 
 
   return (
     <div className="w-full">
-      <StepBar step={step} />
+      {/* Header row: step bar + exit button */}
+      <div className="flex items-center gap-3 mb-0">
+        <div className="flex-1">
+          <StepBar step={step} />
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/home")}
+          aria-label="Exit form"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full
+                    text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100
+                    hover:bg-zinc-100 dark:hover:bg-zinc-800
+                    transition-all duration-150"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
       <AnimatePresence mode="wait" custom={dir}>
         <motion.div
@@ -694,7 +876,8 @@ export default function CreateListingForm({ services }: { services: DbService[] 
           {step === 1 && <Step1 services={services} form={form} onChange={patch} />}
           {step === 2 && <Step2 form={form} onChange={patch} />}
           {step === 3 && <Step3 form={form} onChange={patch} />}
-          {step === 4 && <Step4 form={form} services={services} onEdit={goTo} />}
+          {step === 4 && <Step4 form={form} onChange={patch} />}
+          {step === 5 && <Step5 form={form} services={services} onEdit={goTo} />}
         </motion.div>
       </AnimatePresence>
 
@@ -731,7 +914,7 @@ export default function CreateListingForm({ services }: { services: DbService[] 
           </button>
         )}
 
-        {step < 4 ? (
+        {step < 5 ? (
           <button
             type="button"
             onClick={next}
@@ -745,10 +928,7 @@ export default function CreateListingForm({ services }: { services: DbService[] 
                       transition-all duration-150"
           >
             {navigating ? (
-              <>
-                <Spinner className="w-4 h-4" />
-                Loading…
-              </>
+              <><Spinner className="w-4 h-4" />Loading…</>
             ) : (
               <>
                 Continue

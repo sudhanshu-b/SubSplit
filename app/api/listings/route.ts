@@ -26,10 +26,16 @@ export async function POST(request: Request) {
     priceTotal,
     currency,
     region,
+    durationDays,
+    paymentTerms,
   } = body;
 
-  if (!title || !totalSeats || !priceTotal) {
+  if (!title || !totalSeats || !priceTotal || !durationDays) {
     return Response.json({ error: "Missing required fields." }, { status: 400 });
+  }
+
+  if (Number(durationDays) > 30 && !paymentTerms) {
+    return Response.json({ error: "Payment terms are required for plans longer than 30 days." }, { status: 400 });
   }
 
   // Resolve service ID — either from the picker or by upserting a custom name
@@ -67,15 +73,17 @@ export async function POST(request: Request) {
   const [created] = await db
     .insert(subscription)
     .values({
-      serviceId:   resolvedServiceId,
-      hostId:      session.user.id,
+      serviceId:    resolvedServiceId,
+      hostId:       session.user.id,
       title,
-      description: description || null,
-      totalSeats:  Number(totalSeats),
-      priceTotal:  String(priceTotal),
-      currency:    currency || "INR",
-      region:      region || null,
-      status:      "active",
+      description:  description || null,
+      totalSeats:   Number(totalSeats),
+      priceTotal:   String(priceTotal),
+      currency:     currency || "INR",
+      region:       region || null,
+      durationDays: Number(durationDays),
+      paymentTerms: Number(durationDays) > 30 ? (paymentTerms as "upfront" | "split_30") : null,
+      status:       "active",
     })
     .returning({ id: subscription.id });
 

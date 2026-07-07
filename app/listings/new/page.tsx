@@ -19,7 +19,7 @@ export default async function NewListingPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-[#0e0e10]">
-      <div className="max-w-xl mx-auto px-5 pt-[72px] pb-10">
+      <div className="max-w-xl mx-auto px-5 pt-12 pb-10">
         <CreateListingForm services={services} />
       </div>
     </main>

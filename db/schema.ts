@@ -45,6 +45,11 @@ export const paymentStatus = pgEnum("payment_status", [
   "refunded",
 ]);
 
+export const paymentTerms = pgEnum("payment_terms", [
+  "upfront",
+  "split_30",
+]);
+
 // ---------------------------------------------------------------------------
 // APP_USER
 // This doubles as Better Auth's user table. When we wire up Better Auth we
@@ -121,6 +126,8 @@ export const subscription = pgTable(
     currency: char("currency", { length: 3 }).notNull().default("USD"),
     region: text("region"),
     status: subscriptionStatus("status").notNull().default("draft"),
+    durationDays: integer("duration_days"),
+    paymentTerms: paymentTerms("payment_terms"),
     activeFrom: date("active_from"),
     activeTill: date("active_till"),
     createdAt: timestamp("created_at", { withTimezone: true })
