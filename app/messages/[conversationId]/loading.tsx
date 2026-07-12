@@ -17,13 +17,13 @@ export default function ConversationLoading() {
           <div className="h-9 w-48 bg-gray-200 rounded-2xl rounded-bl-sm" />
         </div>
         <div className="flex justify-end">
-          <div className="h-9 w-36 bg-indigo-200 rounded-2xl rounded-br-sm" />
+          <div className="h-9 w-36 bg-gray-300 rounded-2xl rounded-br-sm" />
         </div>
         <div className="flex justify-start">
           <div className="h-9 w-64 bg-gray-200 rounded-2xl rounded-bl-sm" />
         </div>
         <div className="flex justify-end">
-          <div className="h-9 w-52 bg-indigo-200 rounded-2xl rounded-br-sm" />
+          <div className="h-9 w-52 bg-gray-300 rounded-2xl rounded-br-sm" />
         </div>
       </div>
 

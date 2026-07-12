@@ -12,7 +12,7 @@ import {
   message,
   conversationParticipant,
 } from "@/db/schema";
-import { eq, and, ne, isNull, count, sql, aliasedTable } from "drizzle-orm";
+import { eq, and, ne, count, sql, aliasedTable } from "drizzle-orm";
 
 export const metadata = { title: "Home · LetsSplit" };
 
@@ -99,7 +99,12 @@ export default async function HomePage() {
           eq(conversationParticipant.userId, userId),
         ),
       )
-      .where(and(ne(message.senderId, userId), isNull(message.readAt))),
+      .where(
+        and(
+          ne(message.senderId, userId),
+          sql`(${conversationParticipant.lastReadAt} IS NULL OR ${message.createdAt} > ${conversationParticipant.lastReadAt})`,
+        ),
+      ),
   ]);
 
   return (

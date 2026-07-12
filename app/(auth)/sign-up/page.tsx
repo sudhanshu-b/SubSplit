@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/auth-client";
+import { safeRedirect } from "@/lib/utils";
 import Spinner from "@/components/spinner";
 
-export default function SignUpPage() {
+function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next    = searchParams.get("next");
+  const signInHref = `/sign-in${next ? `?next=${encodeURIComponent(next)}` : ""}`;
   const [form, setForm]         = useState({ name: "", email: "", password: "" });
   const [showPassword, setShow] = useState(false);
+  const [agreed, setAgreed]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
   const [verified, setVerified] = useState(false);
@@ -20,6 +25,7 @@ export default function SignUpPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) return;
     setError("");
     setLoading(true);
 
@@ -27,7 +33,7 @@ export default function SignUpPage() {
       name:        form.name,
       email:       form.email,
       password:    form.password,
-      callbackURL: "/home",
+      callbackURL: safeRedirect(next),
     });
 
     setLoading(false);
@@ -64,7 +70,7 @@ export default function SignUpPage() {
         <p className="text-xs text-gray-400 dark:text-slate-500">
           Already verified?{" "}
           <button
-            onClick={() => router.push("/sign-in")}
+            onClick={() => router.push(signInHref)}
             className="font-semibold text-gray-900 dark:text-white underline underline-offset-2"
           >
             Sign in →
@@ -89,7 +95,7 @@ export default function SignUpPage() {
       </h1>
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-8">
         Already have an account?{" "}
-        <Link href="/sign-in" className="font-semibold text-gray-900 dark:text-white underline underline-offset-2">
+        <Link href={signInHref} className="font-semibold text-gray-900 dark:text-white underline underline-offset-2">
           Sign in
         </Link>
       </p>
@@ -216,10 +222,34 @@ export default function SignUpPage() {
           </div>
         )}
 
+        {/* Terms & privacy agreement */}
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 dark:border-slate-600
+                       text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20"
+          />
+          <span className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+            I agree to the{" "}
+            <Link href="/terms" target="_blank" className="underline font-medium text-gray-900 dark:text-white">
+              Terms of Use
+            </Link>
+            {" "}and{" "}
+            <Link href="/privacy" target="_blank" className="underline font-medium text-gray-900 dark:text-white">
+              Privacy Policy
+            </Link>
+            , including that LetsSplit is not responsible for whether sharing a subscription
+            complies with that service&rsquo;s own terms.
+          </span>
+        </label>
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !agreed}
           className="w-full flex items-center justify-center gap-2.5 rounded-xl
                      bg-gray-900 dark:bg-white px-4 py-3.5 text-sm font-bold
                      text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-slate-100
@@ -273,13 +303,14 @@ export default function SignUpPage() {
         </button>
       </div>
 
-      <p className="text-[11px] text-center text-gray-400 dark:text-slate-500 mt-6">
-        By creating an account you agree to our{" "}
-        <Link href="#" className="underline hover:text-gray-600 dark:hover:text-slate-300">Terms</Link>
-        {" "}and{" "}
-        <Link href="#" className="underline hover:text-gray-600 dark:hover:text-slate-300">Privacy Policy</Link>.
-      </p>
-
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-[420px]"><p className="text-sm text-gray-400">Loading…</p></div>}>
+      <SignUpForm />
+    </Suspense>
   );
 }

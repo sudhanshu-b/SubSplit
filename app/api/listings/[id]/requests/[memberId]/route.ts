@@ -73,17 +73,30 @@ export async function PATCH(
         ),
       );
 
-    // Auto-create a conversation between host and member so they can
-    // coordinate without exchanging personal contact details.
-    const [newConversation] = await db
-      .insert(conversation)
-      .values({ subscriptionId })
-      .returning({ id: conversation.id });
+    // Ensure one group conversation per subscription. If one already exists
+    // (a previous member was approved), just add the new member to it.
+    const [existing] = await db
+      .select({ id: conversation.id })
+      .from(conversation)
+      .where(eq(conversation.subscriptionId, subscriptionId))
+      .limit(1);
 
-    await db.insert(conversationParticipant).values([
-      { conversationId: newConversation.id, userId: session.user.id }, // host
-      { conversationId: newConversation.id, userId: memberId }, // member
-    ]);
+    if (existing) {
+      await db
+        .insert(conversationParticipant)
+        .values({ conversationId: existing.id, userId: memberId })
+        .onConflictDoNothing();
+    } else {
+      const [created] = await db
+        .insert(conversation)
+        .values({ subscriptionId })
+        .returning({ id: conversation.id });
+
+      await db.insert(conversationParticipant).values([
+        { conversationId: created.id, userId: session.user.id }, // host
+        { conversationId: created.id, userId: memberId },         // member
+      ]);
+    }
   } else {
     await db
       .update(membership)

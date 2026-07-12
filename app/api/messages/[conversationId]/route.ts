@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { message, conversationParticipant, appUser } from "@/db/schema";
-import { eq, and, gt, isNull, ne, asc } from "drizzle-orm";
+import { message, conversation, conversationParticipant, subscription, appUser } from "@/db/schema";
+import { eq, and, gt, asc } from "drizzle-orm";
 
 // Verify the session user is a participant in the given conversation.
 async function assertParticipant(conversationId: string, userId: string) {
@@ -16,6 +16,18 @@ async function assertParticipant(conversationId: string, userId: string) {
     )
     .limit(1);
   return !!row;
+}
+
+// A conversation is closed to new messages once its linked plan has
+// finished or been cancelled — no new members will ever transact after that.
+async function assertNotLocked(conversationId: string) {
+  const [row] = await db
+    .select({ status: subscription.status })
+    .from(conversation)
+    .leftJoin(subscription, eq(subscription.id, conversation.subscriptionId))
+    .where(eq(conversation.id, conversationId))
+    .limit(1);
+  return row?.status !== "completed" && row?.status !== "cancelled";
 }
 
 // GET — fetch messages, optionally only those after a given timestamp.
@@ -46,6 +58,7 @@ export async function GET(
       body: message.body,
       senderId: message.senderId,
       senderName: appUser.name,
+      senderImage: appUser.image,
       createdAt: message.createdAt,
       readAt: message.readAt,
     })
@@ -54,15 +67,14 @@ export async function GET(
     .where(and(...conditions))
     .orderBy(asc(message.createdAt));
 
-  // Mark any unread messages from the other participant as read.
+  // Update the current user's last-read timestamp for this conversation.
   await db
-    .update(message)
-    .set({ readAt: new Date() })
+    .update(conversationParticipant)
+    .set({ lastReadAt: new Date() })
     .where(
       and(
-        eq(message.conversationId, conversationId),
-        ne(message.senderId, session.user.id),
-        isNull(message.readAt)
+        eq(conversationParticipant.conversationId, conversationId),
+        eq(conversationParticipant.userId, session.user.id),
       )
     );
 
@@ -81,6 +93,10 @@ export async function POST(
 
   if (!(await assertParticipant(conversationId, session.user.id))) {
     return Response.json({ error: "Forbidden." }, { status: 403 });
+  }
+
+  if (!(await assertNotLocked(conversationId))) {
+    return Response.json({ error: "This plan has ended — messaging is closed." }, { status: 403 });
   }
 
   const { body } = await request.json() as { body: string };
@@ -105,6 +121,6 @@ export async function POST(
     });
 
   return Response.json({
-    message: { ...created, senderName: session.user.name },
+    message: { ...created, senderName: session.user.name, senderImage: session.user.image ?? null },
   }, { status: 201 });
 }

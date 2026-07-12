@@ -35,8 +35,8 @@ export async function POST(
     return Response.json({ error: "You cannot join your own listing." }, { status: 400 });
   }
 
-  if (listing.status !== "active") {
-    return Response.json({ error: "This listing is not accepting requests." }, { status: 400 });
+  if (listing.status !== "recruiting") {
+    return Response.json({ error: "This listing is not currently accepting members." }, { status: 400 });
   }
 
   // Count current active members to check available seats.

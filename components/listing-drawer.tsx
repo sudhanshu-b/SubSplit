@@ -35,11 +35,11 @@ function svcColor(name: string) {
 
 // ── Status config ──────────────────────────────────────────────────────────
 const STATUS_CFG: Record<string, { label: string; color: string; pulse?: boolean }> = {
-  active:    { label: "active",    color: "#22c55e", pulse: true },
-  full:      { label: "full",      color: "#3b82f6"              },
-  draft:     { label: "draft",     color: "#a1a1aa"              },
-  expired:   { label: "expired",   color: "#f87171"              },
-  cancelled: { label: "cancelled", color: "#f87171"              },
+  recruiting:        { label: "recruiting",        color: "#a1a1aa"               },
+  ready_to_purchase: { label: "ready to purchase", color: "#6366f1", pulse: true  },
+  active:            { label: "active",            color: "#22c55e", pulse: true  },
+  completed:         { label: "completed",         color: "#3b82f6"               },
+  cancelled:         { label: "cancelled",         color: "#f87171"               },
 };
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -60,6 +60,7 @@ export type ListingData = {
   serviceCategory: string | null;
   hostId: string;
   hostName: string;
+  hostImage: string | null;
   durationDays: number | null;
   paymentTerms: string | null;
 };
@@ -67,6 +68,7 @@ export type ListingData = {
 export type PendingRequest = {
   memberId: string;
   memberName: string;
+  memberImage: string | null;
   createdAt: Date;
 };
 
@@ -74,7 +76,7 @@ export type PendingRequest = {
 function Dot({ color, size = 8, pulse = false }: { color: string; size?: number; pulse?: boolean }) {
   return (
     <span
-      className={`rounded-full flex-shrink-0 inline-block ${pulse ? "animate-pulse" : ""}`}
+      className={`rounded-full shrink-0 inline-block ${pulse ? "animate-pulse" : ""}`}
       style={{ width: size, height: size, backgroundColor: color }}
     />
   );
@@ -83,7 +85,7 @@ function Dot({ color, size = 8, pulse = false }: { color: string; size?: number;
 function SlotDots({ active, total }: { active: number; total: number }) {
   const show = Math.min(total, 10);
   return (
-    <span className="inline-flex items-center gap-[3px]">
+    <span className="inline-flex items-center gap-0.75">
       {Array.from({ length: show }).map((_, i) => (
         <span
           key={i}
@@ -129,7 +131,7 @@ export default function ListingDrawer({
   listing: ListingData;
   memberCount: number;
   remainingSeats: number;
-  actionState: "host" | "active" | "pending" | "rejected" | "full" | "join";
+  actionState: "host" | "active" | "pending" | "rejected" | "full" | "join" | "locked" | "guest";
   pendingRequests: PendingRequest[];
 }) {
   const router = useRouter();
@@ -137,11 +139,14 @@ export default function ListingDrawer({
 
   function close() {
     setOpen(false);
-    setTimeout(() => router.back(), 300);
+    // router.back() is unreliable here — a guest who arrived via a shared
+    // link, signed in, and got redirected back to this page would land back
+    // on the sign-in form instead. Always go somewhere known.
+    setTimeout(() => router.push("/home"), 300);
   }
 
   const color     = svcColor(listing.serviceName);
-  const statusCfg = STATUS_CFG[listing.status] ?? STATUS_CFG.draft;
+  const statusCfg = STATUS_CFG[listing.status] ?? { label: listing.status, color: "#a1a1aa" };
   const price     = listing.pricePerSeat ? Math.round(parseFloat(listing.pricePerSeat)) : null;
   const listedOn  = new Date(listing.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
@@ -174,8 +179,8 @@ export default function ListingDrawer({
                        flex flex-col"
           >
             {/* Drag handle + close */}
-            <div className="flex items-center justify-between px-5 sm:px-8 pt-4 pb-2 flex-shrink-0">
-              <div className="w-10 h-[3px] rounded-full bg-zinc-200 dark:bg-zinc-800 mx-auto absolute left-1/2 -translate-x-1/2 top-4" />
+            <div className="flex items-center justify-between px-5 sm:px-8 pt-4 pb-2 shrink-0">
+              <div className="w-10 h-0.75 rounded-full bg-zinc-200 dark:bg-zinc-800 mx-auto absolute left-1/2 -translate-x-1/2 top-4" />
               <div className="w-8" /> {/* spacer */}
               <button
                 onClick={close}
@@ -280,6 +285,31 @@ export default function ListingDrawer({
                 >
                   {actionState === "join" && <JoinButton listingId={listing.id} />}
 
+                  {actionState === "guest" && (
+                    <div className="space-y-2">
+                      <Link
+                        href={`/sign-up?next=${encodeURIComponent(`/listings/${listing.id}`)}`}
+                        className="w-full rounded-2xl bg-zinc-900 dark:bg-zinc-100
+                                   text-white dark:text-zinc-900
+                                   text-sm font-bold py-3.5 px-5
+                                   hover:bg-zinc-700 dark:hover:bg-zinc-300
+                                   transition-colors duration-200
+                                   flex items-center justify-center gap-2"
+                      >
+                        Sign up to request to join
+                      </Link>
+                      <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center">
+                        Already have an account?{" "}
+                        <Link
+                          href={`/sign-in?next=${encodeURIComponent(`/listings/${listing.id}`)}`}
+                          className="font-semibold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-2"
+                        >
+                          Sign in
+                        </Link>
+                      </p>
+                    </div>
+                  )}
+
                   {actionState === "host" && (
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -287,19 +317,27 @@ export default function ListingDrawer({
                         This is your listing
                       </span>
                       <Link
-                        href={`/listings/${listing.id}/edit`}
+                        href={`/listings/${listing.id}/manage`}
                         className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                       >
-                        Edit →
+                        Manage →
                       </Link>
                     </div>
                   )}
 
                   {actionState === "active" && (
-                    <span className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                      <Dot color="#22c55e" size={7} pulse />
-                      You&rsquo;re an active member
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        <Dot color="#22c55e" size={7} pulse />
+                        You&rsquo;re an active member
+                      </span>
+                      <Link
+                        href={`/listings/${listing.id}/member`}
+                        className="text-[11px] font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                      >
+                        Manage →
+                      </Link>
+                    </div>
                   )}
 
                   {actionState === "pending" && (
@@ -320,6 +358,13 @@ export default function ListingDrawer({
                     <span className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
                       <Dot color="#a1a1aa" size={6} />
                       No seats available
+                    </span>
+                  )}
+
+                  {actionState === "locked" && (
+                    <span className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                      <Dot color="#a1a1aa" size={6} />
+                      Not accepting new members
                     </span>
                   )}
                 </motion.div>
@@ -354,20 +399,40 @@ export default function ListingDrawer({
                   <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-zinc-600 mb-3">
                     Host
                   </p>
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full flex-shrink-0
-                                     bg-zinc-100 dark:bg-zinc-800
-                                     text-xs font-bold text-zinc-600 dark:text-zinc-300">
-                      {listing.hostName.charAt(0).toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        {listing.hostName}
-                      </p>
-                      <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                        Listed {listedOn}
-                      </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {listing.hostImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={listing.hostImage}
+                          alt=""
+                          className="h-9 w-9 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full shrink-0
+                                         bg-zinc-100 dark:bg-zinc-800
+                                         text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                          {listing.hostName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                          {listing.hostName}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                          Listed {listedOn}
+                        </p>
+                      </div>
                     </div>
+                    <Link
+                      href={`/hosts/${listing.hostId}`}
+                      className="shrink-0 text-[11px] font-semibold
+                                 text-zinc-400 hover:text-zinc-900
+                                 dark:text-zinc-600 dark:hover:text-zinc-200
+                                 transition-colors"
+                    >
+                      View profile →
+                    </Link>
                   </div>
                 </motion.div>
 

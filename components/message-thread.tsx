@@ -3,19 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 
 type Message = {
-  id: string;
-  body: string;
-  senderId: string;
-  senderName: string;
-  createdAt: Date | string;
-  readAt: Date | string | null;
+  id:          string;
+  body:        string;
+  senderId:    string;
+  senderName:  string;
+  senderImage: string | null;
+  createdAt:   Date | string;
 };
 
 type Props = {
-  conversationId: string;
-  currentUserId: string;
-  initialMessages: Message[];
-  otherUserName: string;
+  conversationId:   string;
+  currentUserId:    string;
+  initialMessages:  Message[];
+  conversationName: string;
+  disabled?:        boolean;
 };
 
 // ── Emoji picker data ─────────────────────────────────────────────────────────
@@ -32,6 +33,13 @@ const EMOJI_CATEGORIES = [
 ] as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+function avatarColor(name: string) {
+  const palette = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#14b8a6"];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+}
+
 function timeAgo(date: Date | string) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
   if (seconds < 10) return "just now";
@@ -51,34 +59,6 @@ function formatDate(date: Date | string) {
   yesterday.setDate(today.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
   return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
-}
-
-// ── CopyIcon ──────────────────────────────────────────────────────────────────
-function CopyIcon({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  function copy() {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }
-  return (
-    <button
-      onClick={copy}
-      title="Copy"
-      className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-    >
-      {copied ? (
-        <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m5 13 4 4L19 7" />
-        </svg>
-      ) : (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
-        </svg>
-      )}
-    </button>
-  );
 }
 
 // ── EmojiPicker ───────────────────────────────────────────────────────────────
@@ -150,7 +130,7 @@ export default function MessageThread({
   conversationId,
   currentUserId,
   initialMessages,
-  otherUserName,
+  disabled = false,
 }: Props) {
   const [messages, setMessages]     = useState<Message[]>(initialMessages);
   const [input, setInput]           = useState("");
@@ -213,7 +193,7 @@ export default function MessageThread({
   async function handleSend(e?: { preventDefault(): void }) {
     e?.preventDefault();
     const body = input.trim();
-    if (!body || sending) return;
+    if (!body || sending || disabled) return;
     setSending(true);
     setInput("");
     const res = await fetch(`/api/messages/${conversationId}`, {
@@ -240,7 +220,7 @@ export default function MessageThread({
 
   // Build display groups
   type DateGroup = { type: "date";  key: string; label: string };
-  type MsgGroup  = { type: "group"; key: string; isMine: boolean; senderName: string; messages: (Message & { isMine: boolean })[] };
+  type MsgGroup  = { type: "group"; key: string; isMine: boolean; senderName: string; senderImage: string | null; messages: (Message & { isMine: boolean })[] };
   const displayGroups: (DateGroup | MsgGroup)[] = [];
   let lastDateLabel = "";
   let currentGroup: MsgGroup | null = null;
@@ -256,12 +236,11 @@ export default function MessageThread({
     if (currentGroup && currentGroup.messages[0].senderId === msg.senderId) {
       currentGroup.messages.push({ ...msg, isMine });
     } else {
-      currentGroup = { type: "group", key: `group-${msg.id}`, isMine, senderName: msg.senderName, messages: [{ ...msg, isMine }] };
+      currentGroup = { type: "group", key: `group-${msg.id}`, isMine, senderName: msg.senderName, senderImage: msg.senderImage, messages: [{ ...msg, isMine }] };
       displayGroups.push(currentGroup);
     }
   }
 
-  const otherInitial = otherUserName.charAt(0).toUpperCase();
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-zinc-900">
@@ -283,12 +262,12 @@ export default function MessageThread({
         {displayGroups.map((group) => {
           if (group.type === "date") {
             return (
-              <div key={group.key} className="flex items-center gap-3 px-2">
-                <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+              <div key={group.key} className="flex items-center justify-center gap-3">
+                <div className="w-10 h-px bg-zinc-200 dark:bg-zinc-800" />
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 shrink-0">
                   {group.label}
                 </span>
-                <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+                <div className="w-10 h-px bg-zinc-200 dark:bg-zinc-800" />
               </div>
             );
           }
@@ -297,9 +276,21 @@ export default function MessageThread({
           return (
             <div key={group.key} className={`flex gap-2.5 ${group.isMine ? "flex-row-reverse" : "flex-row"}`}>
               {!group.isMine && (
-                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-300 shrink-0 self-end mb-5">
-                  {otherInitial}
-                </div>
+                group.senderImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={group.senderImage}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover shrink-0 self-end mb-5"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 self-end mb-5"
+                    style={{ backgroundColor: avatarColor(group.senderName) }}
+                  >
+                    {group.senderName.charAt(0).toUpperCase()}
+                  </div>
+                )
               )}
 
               <div className={`flex flex-col gap-1 max-w-[72%] ${group.isMine ? "items-end" : "items-start"}`}>
@@ -318,7 +309,7 @@ export default function MessageThread({
                   return (
                     <div
                       key={msg.id}
-                      className={`px-3.5 py-2.5 text-sm leading-relaxed break-words ${
+                      className={`px-3.5 py-2.5 text-sm leading-relaxed wrap-break-word ${
                         group.isMine
                           ? `bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 ${
                               isFirst && isLast ? "rounded-2xl rounded-tr-md" :
@@ -338,12 +329,6 @@ export default function MessageThread({
                     </div>
                   );
                 })}
-
-                {!group.isMine && (
-                  <div className="flex items-center gap-0.5 px-0.5 mt-0.5">
-                    <CopyIcon text={group.messages.map(m => m.body).join("\n")} />
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -354,66 +339,77 @@ export default function MessageThread({
 
       {/* ── Input bar ── */}
       <div className="shrink-0 px-4 pb-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-        <div className="relative flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-3 py-2">
-
-          {/* Emoji button */}
-          <div className="relative shrink-0 self-end mb-0.5">
-            <button
-              type="button"
-              onClick={() => setShowEmoji((v) => !v)}
-              title="Emoji"
-              className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 ${
-                showEmoji ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200" : "hover:bg-zinc-100 dark:hover:bg-zinc-700"
-              }`}
-            >
-              {/* Smiley face SVG — monochrome */}
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 14s1 1.5 3.5 1.5 3.5-1.5 3.5-1.5" />
-                <circle cx="9" cy="10" r="0.5" fill="currentColor" stroke="none" />
-                <circle cx="15" cy="10" r="0.5" fill="currentColor" stroke="none" />
-              </svg>
-            </button>
-
-            {showEmoji && (
-              <EmojiPicker
-                onSelect={(emoji) => { insertEmoji(emoji); setShowEmoji(false); }}
-                onClose={() => setShowEmoji(false)}
-              />
-            )}
+        {disabled ? (
+          <div className="flex items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-3 py-3">
+            <svg className="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              This plan has ended — messaging is closed.
+            </span>
           </div>
+        ) : (
+          <div className="relative flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-3 py-2">
 
-          {/* Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message…"
-            disabled={sending}
-            rows={1}
-            className="flex-1 resize-none bg-transparent py-1.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none disabled:opacity-60 leading-relaxed"
-          />
-
-          {/* Send button */}
-          <div className="shrink-0 self-end mb-0.5">
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || sending}
-              className="flex items-center gap-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold px-3.5 py-2 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
-            >
-              {sending ? (
-                <span className="w-3.5 h-3.5 border-2 border-white/30 dark:border-zinc-900/30 border-t-white dark:border-t-zinc-900 rounded-full animate-spin" />
-              ) : (
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+            {/* Emoji button */}
+            <div className="relative shrink-0 self-end mb-0.5">
+              <button
+                type="button"
+                onClick={() => setShowEmoji((v) => !v)}
+                title="Emoji"
+                className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 ${
+                  showEmoji ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200" : "hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {/* Smiley face SVG — monochrome */}
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 14s1 1.5 3.5 1.5 3.5-1.5 3.5-1.5" />
+                  <circle cx="9" cy="10" r="0.5" fill="currentColor" stroke="none" />
+                  <circle cx="15" cy="10" r="0.5" fill="currentColor" stroke="none" />
                 </svg>
-              )}
-              Send
-            </button>
-          </div>
+              </button>
 
-        </div>
+              {showEmoji && (
+                <EmojiPicker
+                  onSelect={(emoji) => { insertEmoji(emoji); setShowEmoji(false); }}
+                  onClose={() => setShowEmoji(false)}
+                />
+              )}
+            </div>
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message…"
+              disabled={sending}
+              rows={1}
+              className="flex-1 resize-none bg-transparent py-1.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none disabled:opacity-60 leading-relaxed"
+            />
+
+            {/* Send button */}
+            <div className="shrink-0 self-end mb-0.5">
+              <button
+                onClick={() => handleSend()}
+                disabled={!input.trim() || sending}
+                className="flex items-center gap-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold px-3.5 py-2 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
+              >
+                {sending ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 dark:border-zinc-900/30 border-t-white dark:border-t-zinc-900 rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                  </svg>
+                )}
+                Send
+              </button>
+            </div>
+
+          </div>
+        )}
       </div>
     </div>
   );

@@ -32,15 +32,17 @@ function serviceColor(name: string) {
 
 // ── Status config ──────────────────────────────────────────────────────────
 const STATUS: Record<string, { label: string; color: string; pulse?: boolean }> = {
-  active:    { label: "active",    color: "#22c55e", pulse: true  },
-  pending:   { label: "pending",   color: "#f59e0b"               },
-  full:      { label: "full",      color: "#3b82f6"               },
-  draft:     { label: "draft",     color: "#a1a1aa"               },
-  expired:   { label: "expired",   color: "#f87171"               },
-  cancelled: { label: "cancelled", color: "#f87171"               },
-  left:      { label: "left",      color: "#a1a1aa"               },
-  removed:   { label: "removed",   color: "#f87171"               },
-  rejected:  { label: "rejected",  color: "#f87171"               },
+  // listing statuses
+  recruiting:        { label: "recruiting",        color: "#a1a1aa"               },
+  ready_to_purchase: { label: "ready to purchase", color: "#6366f1", pulse: true  },
+  active:            { label: "active",            color: "#22c55e", pulse: true  },
+  completed:         { label: "completed",         color: "#3b82f6"               },
+  cancelled:         { label: "cancelled",         color: "#f87171"               },
+  // membership statuses
+  pending:           { label: "pending",           color: "#f59e0b"               },
+  left:              { label: "left",              color: "#a1a1aa"               },
+  removed:           { label: "removed",           color: "#f87171"               },
+  rejected:          { label: "rejected",          color: "#f87171"               },
 };
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -91,7 +93,7 @@ function Dot({ color, pulse = false, size = 8 }: { color: string; pulse?: boolea
 
 // ── StatusDot ──────────────────────────────────────────────────────────────
 function StatusDot({ status }: { status: string }) {
-  const cfg = STATUS[status] ?? STATUS.draft;
+  const cfg = STATUS[status] ?? { label: status, color: "#a1a1aa" };
   return (
     <span className="inline-flex items-center gap-1.5">
       <Dot color={cfg.color} pulse={cfg.pulse} size={6} />
@@ -217,7 +219,7 @@ function HostedRow({ plan, delay }: { plan: HostedPlan; delay: number }) {
 
         {/* Right: manage link */}
         <Link
-          href={`/listings/${plan.id}`}
+          href={`/listings/${plan.id}/manage`}
           className="flex-shrink-0 text-[11px] font-semibold text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100
                      opacity-100 sm:opacity-0 sm:group-hover:opacity-100
                      transition-all duration-150 pt-0.5"
@@ -242,7 +244,7 @@ function JoinedRow({ plan, delay }: { plan: JoinedPlan; delay: number }) {
       transition={{ duration: 0.4, delay, ease: EASE }}
       className={`group py-4 border-b border-zinc-100 dark:border-zinc-800/70 last:border-0 ${inactive ? "opacity-40" : ""}`}
     >
-      <Link href={`/listings/${plan.subscriptionId}`} className="flex items-start justify-between gap-4">
+      <Link href={`/listings/${plan.subscriptionId}/member`} className="flex items-start justify-between gap-4">
         {/* Left */}
         <div className="flex items-start gap-3 min-w-0">
           <Dot color={color} size={10} />
@@ -328,7 +330,7 @@ export default function DashboardClient({
     .reduce((sum, p) => sum + (formatPrice(p.pricePerSeat) ?? 0), 0);
 
   const activePlansCount =
-    hostedPlans.filter(p => p.status === "active").length +
+    hostedPlans.filter(p => ["recruiting", "ready_to_purchase", "active"].includes(p.status)).length +
     joinedPlans.filter(p => p.membershipStatus === "active").length;
 
   const pendingTotal = hostedPlans.reduce((n, p) => n + p.pendingRequests, 0);
@@ -351,12 +353,14 @@ export default function DashboardClient({
               <h1 className="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-zinc-100 leading-tight break-words">
                 {first},
               </h1>
-              <p className="text-3xl sm:text-4xl font-bold text-zinc-400 dark:text-zinc-500 leading-tight">
-                you&rsquo;re saving
-              </p>
-              <p className="text-5xl sm:text-6xl font-black tracking-tight text-zinc-900 dark:text-zinc-100 mt-1">
-                ₹{monthlySavings}
-                <span className="text-xl sm:text-2xl font-semibold text-zinc-400 ml-1">/ month.</span>
+              <p className="flex flex-wrap items-baseline gap-x-2 mt-1">
+                <span className="text-3xl sm:text-4xl font-bold text-zinc-400 dark:text-zinc-500 leading-tight">
+                  you&rsquo;re saving
+                </span>
+                <span className="text-5xl sm:text-6xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">
+                  ₹{monthlySavings}
+                  <span className="text-xl sm:text-2xl font-semibold text-zinc-400 ml-1">/ month.</span>
+                </span>
               </p>
             </>
           ) : (

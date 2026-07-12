@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { subscription, service } from "@/db/schema";
 import { sql } from "drizzle-orm";
 
+const UPI_RE = /^[a-zA-Z0-9._\-]{2,256}@[a-zA-Z]{2,64}$/;
+
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
 
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
     region,
     durationDays,
     paymentTerms,
+    upiId,
   } = body;
 
   if (!title || !totalSeats || !priceTotal || !durationDays) {
@@ -38,6 +41,11 @@ export async function POST(request: Request) {
     return Response.json({ error: "Payment terms are required for plans longer than 30 days." }, { status: 400 });
   }
 
+  const trimmedUpi = typeof upiId === "string" ? upiId.trim() : "";
+  if (trimmedUpi && !UPI_RE.test(trimmedUpi)) {
+    return Response.json({ error: "Please enter a valid UPI ID (e.g., username@bank)." }, { status: 400 });
+  }
+
   // Resolve service ID — either from the picker or by upserting a custom name
   let resolvedServiceId: string;
 
@@ -46,7 +54,6 @@ export async function POST(request: Request) {
   } else if (customServiceName?.trim()) {
     const name = (customServiceName as string).trim();
 
-    // Reuse an existing service if the name already exists (case-insensitive)
     const existing = await db
       .select({ id: service.id })
       .from(service)
@@ -83,7 +90,8 @@ export async function POST(request: Request) {
       region:       region || null,
       durationDays: Number(durationDays),
       paymentTerms: Number(durationDays) > 30 ? (paymentTerms as "upfront" | "split_30") : null,
-      status:       "active",
+      upiId:        trimmedUpi || null,
+      status:       "recruiting",
     })
     .returning({ id: subscription.id });
 

@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { safeRedirect } from "@/lib/utils";
 import Spinner from "@/components/spinner";
 
-export default function SignInPage() {
+function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next    = searchParams.get("next");
+  const signUpHref = `/sign-up${next ? `?next=${encodeURIComponent(next)}` : ""}`;
   const [form, setForm]           = useState({ email: "", password: "" });
   const [showPassword, setShow]   = useState(false);
+  const [agreed, setAgreed]       = useState(false);
   const [error, setError]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [unverified, setUnverified] = useState(false);
@@ -21,6 +26,7 @@ export default function SignInPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!agreed) return;
     setError("");
     setLoading(true);
 
@@ -41,7 +47,7 @@ export default function SignInPage() {
       return;
     }
 
-    router.push("/home");
+    router.push(safeRedirect(next));
   }
 
   async function handleResend() {
@@ -49,7 +55,7 @@ export default function SignInPage() {
     await fetch("/api/auth/send-verification-email", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ email: form.email, callbackURL: "/home" }),
+      body:    JSON.stringify({ email: form.email, callbackURL: safeRedirect(next) }),
     });
     setResendStatus("sent");
   }
@@ -63,7 +69,7 @@ export default function SignInPage() {
       </h1>
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-8">
         Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-semibold text-gray-900 dark:text-white underline underline-offset-2">
+        <Link href={signUpHref} className="font-semibold text-gray-900 dark:text-white underline underline-offset-2">
           Sign up free
         </Link>
       </p>
@@ -185,10 +191,33 @@ export default function SignInPage() {
           </div>
         )}
 
+        {/* Terms & privacy agreement */}
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 dark:border-slate-600
+                       text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-gray-900/20 dark:focus:ring-white/20"
+          />
+          <span className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+            I agree to the{" "}
+            <Link href="/terms" target="_blank" className="underline font-medium text-gray-900 dark:text-white">
+              Terms of Use
+            </Link>
+            {" "}and{" "}
+            <Link href="/privacy" target="_blank" className="underline font-medium text-gray-900 dark:text-white">
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !agreed}
           className="w-full flex items-center justify-center gap-2.5 rounded-xl
                      bg-gray-900 dark:bg-white px-4 py-3.5 text-sm font-bold
                      text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-slate-100
@@ -245,5 +274,13 @@ export default function SignInPage() {
       </p>
 
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="w-full max-w-[420px]"><p className="text-sm text-gray-400">Loading…</p></div>}>
+      <SignInForm />
+    </Suspense>
   );
 }

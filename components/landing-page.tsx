@@ -11,37 +11,24 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 // Subscription services shown in the rotating hero icon
 const SERVICES = [
-  { name: "Netflix",    bg: "#E50914", icon: "https://cdn.simpleicons.org/netflix/ffffff"       },
-  { name: "Spotify",    bg: "#1DB954", icon: "https://cdn.simpleicons.org/spotify/ffffff"       },
-  { name: "YouTube",    bg: "#FF0000", icon: "https://cdn.simpleicons.org/youtube/ffffff"       },
-  { name: "iCloud+",    bg: "#3693F3", icon: "https://cdn.simpleicons.org/icloud/ffffff"        },
-  { name: "Perplexity", bg: "#1FB8CD", icon: "https://cdn.simpleicons.org/perplexity/ffffff"   },
-  { name: "Copilot",    bg: "#6941C6", icon: "https://cdn.simpleicons.org/githubcopilot/ffffff" },
-  { name: "Notion",     bg: "#191919", icon: "https://cdn.simpleicons.org/notion/ffffff"        },
-  { name: "GitHub",     bg: "#24292E", icon: "https://cdn.simpleicons.org/github/ffffff"        },
+  { name: "Netflix",    bg: "#E50914", icon: "https://cdn.simpleicons.org/netflix/ffffff",        filter: undefined },
+  { name: "ChatGPT",    bg: "#10a37f", icon: "/ChatGPT-Logo.png",                                filter: "brightness(0) invert(1)" },
+  { name: "Spotify",    bg: "#1DB954", icon: "https://cdn.simpleicons.org/spotify/ffffff",        filter: undefined },
+  { name: "Claude",     bg: "#D97757", icon: "/claude.png",                                       filter: undefined },
+  { name: "YouTube",    bg: "#FF0000", icon: "https://cdn.simpleicons.org/youtube/ffffff",        filter: undefined },
+  { name: "Gemini",     bg: "#ffffff", icon: "/Gemini-logo.png",                                  filter: undefined },
+  { name: "iCloud+",    bg: "#3693F3", icon: "https://cdn.simpleicons.org/icloud/ffffff",         filter: undefined },
+  { name: "Perplexity", bg: "#1FB8CD", icon: "https://cdn.simpleicons.org/perplexity/ffffff",    filter: undefined },
+  { name: "Copilot",    bg: "#6941C6", icon: "https://cdn.simpleicons.org/githubcopilot/ffffff",  filter: undefined },
+  { name: "Notion",     bg: "#191919", icon: "https://cdn.simpleicons.org/notion/ffffff",         filter: undefined },
+  { name: "GitHub",     bg: "#24292E", icon: "https://cdn.simpleicons.org/github/ffffff",         filter: undefined },
 ];
 
-// Floating icon badges that orbit the stats section
-const FLOATING_ICONS: Array<{
-  icon: string; color: string; delay: number;
-  top?: string; left?: string; right?: string;
-}> = [
-  { icon: "https://cdn.simpleicons.org/netflix/ffffff",       color: "#E50914", top: "8%",  left: "4%",   delay: 0   },
-  { icon: "https://cdn.simpleicons.org/spotify/ffffff",       color: "#1DB954", top: "18%", right: "4%",  delay: 0.4 },
-  { icon: "https://cdn.simpleicons.org/youtube/ffffff",       color: "#FF0000", top: "62%", left: "2%",   delay: 0.8 },
-  { icon: "https://cdn.simpleicons.org/icloud/ffffff",        color: "#3693F3", top: "70%", right: "5%",  delay: 0.2 },
-  { icon: "https://cdn.simpleicons.org/perplexity/ffffff",   color: "#1FB8CD", top: "40%", left: "9%",   delay: 0.6 },
-  { icon: "https://cdn.simpleicons.org/githubcopilot/ffffff", color: "#6941C6", top: "14%", right: "12%", delay: 1.0 },
-  { icon: "https://cdn.simpleicons.org/notion/ffffff",        color: "#191919", top: "80%", left: "12%",  delay: 0.3 },
-  { icon: "https://cdn.simpleicons.org/github/ffffff",        color: "#24292E", top: "52%", right: "2%",  delay: 0.7 },
-];
 
 // Tab-driven sticky feature sections (like Mobbin's "Screens | UI Elements | Flows")
 const FEATURES = [
@@ -62,36 +49,65 @@ const FEATURES = [
   },
 ];
 
-const TESTIMONIALS = [
+export type LandingTestimonial = {
+  authorName:  string;
+  authorRole:  string;
+  body:        string;
+  metric:      string;
+  metricLabel: string;
+  avatarUrl:   string | null;
+};
+
+// Shown only if the database has no published testimonials yet (e.g. before
+// the admin panel's testimonial table has been seeded).
+const FALLBACK_TESTIMONIALS: LandingTestimonial[] = [
   {
-    name: "Priya Sharma", role: "Student, Delhi",
-    text: "Saving ₹600/month on Netflix and Spotify. The host was super friendly and payment was totally seamless.",
-    initials: "PS", color: "#4f46e5",
+    authorName: "Priya Sharma", authorRole: "Student, Delhi",
+    body: "Saving ₹600/month on Netflix and Spotify. The host was super friendly and payment was totally seamless.",
+    metric: "₹600", metricLabel: "saved per month",
+    avatarUrl: "https://i.pravatar.cc/150?img=47",
   },
   {
-    name: "Arjun Mehta", role: "Developer, Bengaluru",
-    text: "I host 3 plans and completely offset my own subscription costs. The messaging feature makes coordination effortless.",
-    initials: "AM", color: "#0ea5e9",
+    authorName: "Arjun Mehta", authorRole: "Developer, Bengaluru",
+    body: "I host 3 plans and completely offset my own subscription costs. The messaging feature makes coordination effortless.",
+    metric: "3×", metricLabel: "subscription costs recovered",
+    avatarUrl: "https://i.pravatar.cc/150?img=11",
   },
   {
-    name: "Sneha Rao", role: "Designer, Mumbai",
-    text: "Finally a clean, trustworthy way to share subscriptions. No more sketchy WhatsApp groups. I feel safe here.",
-    initials: "SR", color: "#ec4899",
+    authorName: "Sneha Rao", authorRole: "Designer, Mumbai",
+    body: "Finally a clean, trustworthy way to share subscriptions. No more sketchy WhatsApp groups. I feel safe here.",
+    metric: "100%", metricLabel: "stress-free sharing",
+    avatarUrl: "https://i.pravatar.cc/150?img=5",
   },
   {
-    name: "Karan Patel", role: "Entrepreneur, Ahmedabad",
-    text: "Split YouTube Premium with 3 others. Paying ₹50/month instead of ₹189. The browse UX is really polished.",
-    initials: "KP", color: "#f59e0b",
+    authorName: "Karan Patel", authorRole: "Entrepreneur, Ahmedabad",
+    body: "Split YouTube Premium with 3 others. Paying ₹50/month instead of ₹189. The browse UX is really polished.",
+    metric: "₹139", metricLabel: "saved every month",
+    avatarUrl: "https://i.pravatar.cc/150?img=33",
   },
   {
-    name: "Divya Nair", role: "Teacher, Kochi",
-    text: "Simple, clean, honest. LetsSplit does exactly what it promises. I've recommended it to my entire family.",
-    initials: "DN", color: "#10b981",
+    authorName: "Divya Nair", authorRole: "Teacher, Kochi",
+    body: "Simple, clean, honest. LetsSplit does exactly what it promises. I've recommended it to my entire family.",
+    metric: "5★", metricLabel: "rated by my whole family",
+    avatarUrl: "https://i.pravatar.cc/150?img=44",
   },
   {
-    name: "Rohan Gupta", role: "Product Manager, Pune",
-    text: "Found a Notion plan in 2 minutes, requested to join, and was approved the same day. Perfect experience.",
-    initials: "RG", color: "#8b5cf6",
+    authorName: "Rohan Gupta", authorRole: "Product Manager, Pune",
+    body: "Found a Notion plan in 2 minutes, requested to join, and was approved the same day. Perfect experience.",
+    metric: "2 min", metricLabel: "to find the right plan",
+    avatarUrl: "https://i.pravatar.cc/150?img=57",
+  },
+  {
+    authorName: "Meera Joshi", authorRole: "Freelancer, Hyderabad",
+    body: "Splitting ChatGPT Plus with two colleagues through LetsSplit. We each pay ₹670 instead of ₹2000. Honestly brilliant.",
+    metric: "₹1330", metricLabel: "saved on ChatGPT Plus",
+    avatarUrl: "https://i.pravatar.cc/150?img=16",
+  },
+  {
+    authorName: "Vikram Nair", authorRole: "Researcher, Chennai",
+    body: "Found a Claude Pro plan to share within a day. The host setup everything, I just pay my share — totally hassle-free.",
+    metric: "66%", metricLabel: "off Claude Pro",
+    avatarUrl: "https://i.pravatar.cc/150?img=60",
   },
 ];
 
@@ -104,8 +120,9 @@ const MARQUEE_ITEMS = [
   { name: "GitHub Copilot",       icon: "https://cdn.simpleicons.org/githubcopilot/6941C6"  },
   { name: "iCloud+",              icon: "https://cdn.simpleicons.org/icloud/3693F3"         },
   { name: "Perplexity",           icon: "https://cdn.simpleicons.org/perplexity/1FB8CD"     },
-  { name: "Canva Pro",            icon: "https://cdn.simpleicons.org/canva/00C4CC"          },
-  { name: "Adobe Creative Cloud", icon: "https://cdn.simpleicons.org/adobe/FF0000"          },
+  { name: "ChatGPT",              icon: "/ChatGPT-Logo.png"  },
+  { name: "Claude",               icon: "/claude.png"        },
+  { name: "Gemini",               icon: "/Gemini-logo.png"   },
   { name: "Apple TV+",            icon: "https://cdn.simpleicons.org/appletv/374151"        },
   { name: "1Password",            icon: "https://cdn.simpleicons.org/1password/0094F5"      },
   { name: "Dropbox",              icon: "https://cdn.simpleicons.org/dropbox/0061FF"        },
@@ -204,7 +221,12 @@ function HeroIcon() {
           style={{ backgroundColor: SERVICES[idx].bg }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={SERVICES[idx].icon} alt={SERVICES[idx].name} className="w-10 h-10 object-contain" />
+          <img
+            src={SERVICES[idx].icon}
+            alt={SERVICES[idx].name}
+            className="w-10 h-10 object-contain"
+            style={SERVICES[idx].filter ? { filter: SERVICES[idx].filter } : undefined}
+          />
         </motion.div>
       </AnimatePresence>
     </div>
@@ -243,47 +265,6 @@ function RevealText({
   );
 }
 
-/**
- * A floating service-brand badge that bobs up and down infinitely.
- * Used in the stats section to mimic Mobbin's orbiting app icons.
- */
-function FloatingBadge({
-  icon,
-  color,
-  style,
-  delay,
-}: {
-  icon: string;
-  color: string;
-  style: React.CSSProperties;
-  delay: number;
-}) {
-  return (
-    <motion.div
-      className="absolute select-none pointer-events-none"
-      style={style}
-      initial={{ opacity: 0, scale: 0.4 }}
-      whileInView={{ opacity: 0.9, scale: 1 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ delay, duration: 0.7, ease: EASE }}
-    >
-      <motion.div
-        animate={{ y: [0, -14, 0] }}
-        transition={{
-          duration: 3.5 + delay,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: delay * 0.4,
-        }}
-        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl"
-        style={{ backgroundColor: color }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={icon} alt="" className="w-8 h-8 object-contain" />
-      </motion.div>
-    </motion.div>
-  );
-}
 
 /**
  * One infinite-scrolling row of subscription service names.
@@ -599,7 +580,7 @@ function MessagesMockup() {
 // ─── Page Sections ────────────────────────────────────────────────────────────
 
 /** ① Floating Pill Navbar — glass blur, same pill shape as Mobbin */
-function LandingNav() {
+export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const { data: session, isPending } = useSession();
 
@@ -634,7 +615,7 @@ function LandingNav() {
 
         {/* Centre nav links */}
         <div className="hidden md:flex items-center gap-6">
-          {([["Pricing", "/pricing"], ["Browse", "/browse"], ["About", "/about"]] as [string, string][]).map(([label, href]) => (
+          {([["Pricing", "/pricing"], ["Browse", "/browse"], ["About", "/about"], ["FAQ", "/faq"]] as [string, string][]).map(([label, href]) => (
             <Link
               key={label}
               href={href}
@@ -797,136 +778,6 @@ function SocialProofSection() {
   );
 }
 
-/** ④ Product preview — browser chrome wrapping the browse-page mockup */
-function ProductPreviewSection() {
-  return (
-    <section className="hidden md:block pt-24 pb-0 px-4 bg-white dark:bg-slate-950 overflow-hidden">
-      <motion.div
-        className="max-w-5xl mx-auto relative"
-        initial={{ opacity: 0, y: 40, scale: 0.97 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.7, ease: EASE }}
-      >
-        <BrowseMockup />
-
-        {/* Downward fade — bottom of the window melts into the page background */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-52 pointer-events-none rounded-b-2xl"
-          style={{
-            background: "linear-gradient(to top, var(--fade-bg, #ffffff) 0%, transparent 100%)",
-          }}
-        />
-      </motion.div>
-
-      {/* CSS variable so the fade matches light / dark background */}
-      <style>{`
-        html:not(.dark) .max-w-5xl { --fade-bg: #ffffff; }
-        html.dark        .max-w-5xl { --fade-bg: #020617; }
-      `}</style>
-    </section>
-  );
-}
-
-/**
- * ⑤ Stats section — GSAP ScrollTrigger count-up animation.
- * Floating service badges orbit the numbers just like Mobbin's app-icon cloud.
- */
-function StatsSection() {
-  const statsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
-    const els = statsRef.current?.querySelectorAll<HTMLElement>("[data-target]");
-    if (!els) return;
-
-    const tweens = Array.from(els).map((el) => {
-      const target = parseFloat(el.dataset.target ?? "0");
-      const prefix = el.dataset.prefix ?? "";
-      const suffix = el.dataset.suffix ?? "";
-      const obj    = { val: 0 };
-
-      return gsap.to(obj, {
-        val: target,
-        duration: 2.2,
-        ease: "power3.out",
-        scrollTrigger: { trigger: el, start: "top 82%", once: true },
-        onUpdate() {
-          el.textContent =
-            prefix + Math.round(obj.val).toLocaleString("en-IN") + suffix;
-        },
-      });
-    });
-
-    return () => {
-      tweens.forEach((t) => t.kill());
-      ScrollTrigger.getAll().forEach((st) => st.kill());
-    };
-  }, []);
-
-  const stats = [
-    { target: "500",   prefix: "",  suffix: "+", label: "active listings"   },
-    { target: "12000", prefix: "",  suffix: "+", label: "verified members"  },
-    { target: "40",    prefix: "₹", suffix: "L+",label: "saved by members" },
-  ];
-
-  return (
-    <section className="relative py-16 md:py-36 px-4 overflow-hidden bg-white dark:bg-slate-950">
-      {/* Orbiting floating badges — hidden on mobile to avoid overlap */}
-      <div className="hidden md:block">
-        {FLOATING_ICONS.map((item, i) => (
-          <FloatingBadge
-            key={i}
-            icon={item.icon}
-            color={item.color}
-            delay={item.delay}
-            style={{
-              top:   item.top,
-              left:  item.left,
-              right: item.right,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Counters */}
-      <div ref={statsRef} className="relative z-10 max-w-2xl mx-auto text-center">
-        <motion.p
-          className="text-sm font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-6"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease: EASE }}
-        >
-          A growing community of
-        </motion.p>
-
-        {stats.map(({ target, prefix, suffix, label }, i) => (
-          <motion.div
-            key={label}
-            className="mb-3"
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ delay: i * 0.08, duration: 0.6, ease: EASE }}
-          >
-            <span
-              className="font-bold tracking-tight leading-none text-gray-900 dark:text-white block"
-              style={{ fontSize: "clamp(3.5rem, 10vw, 6.5rem)" }}
-              data-target={target}
-              data-prefix={prefix}
-              data-suffix={suffix}
-            >
-              {prefix}0{suffix}
-            </span>
-            <span className="text-lg text-gray-400 dark:text-slate-500 font-medium">{label}</span>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 /**
  * ⑥ Features — sticky-scroll section.
@@ -951,14 +802,6 @@ function FeaturesSection() {
 
   return (
     <>
-      {/* Small green accent pill — same as Mobbin's section divider */}
-      <motion.div
-        className="w-8 h-1 rounded-full bg-emerald-500 mx-auto"
-        initial={{ scaleX: 0 }}
-        whileInView={{ scaleX: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.4, ease: EASE }}
-      />
 
       {/* ── Mobile: stacked feature cards (no sticky scroll) ── */}
       <div className="md:hidden px-4 py-16 bg-white dark:bg-slate-950 space-y-20">
@@ -996,10 +839,10 @@ function FeaturesSection() {
         className="relative hidden md:block"
       >
         <div className="sticky top-0 h-screen flex flex-col items-center justify-center
-                        px-4 bg-white dark:bg-slate-950 overflow-hidden">
+                        px-4 bg-white mb-3 dark:bg-slate-950 overflow-hidden">
 
           {/* Tab bar */}
-          <motion.div
+          {/* <motion.div
             className="flex items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded-full p-1 mb-14"
             initial={{ opacity: 0, y: -12 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1018,7 +861,7 @@ function FeaturesSection() {
                 {f.tab}
               </div>
             ))}
-          </motion.div>
+          </motion.div> */}
 
           {/* Headline + body text */}
           <AnimatePresence mode="wait">
@@ -1062,444 +905,500 @@ function FeaturesSection() {
 }
 
 /** ⑦ How it works — 3-column feature cards */
-function HowItWorksSection() {
-  const steps = [
-    {
-      icon: "🔍",
-      title: "Discover a plan",
-      body:  "Browse hundreds of verified listings. Filter by service, price, or available slots.",
-    },
-    {
-      icon: "🤝",
-      title: "Request to join",
-      body:  "Send a request with one tap. Chat with the host and confirm every detail.",
-    },
-    {
-      icon: "💸",
-      title: "Split and save",
-      body:  "Pay your share every month. Track savings and manage memberships in one place.",
-    },
-  ];
+// function HowItWorksSection() {
+//   const steps = [
+//     {
+//       icon: "🔍",
+//       title: "Discover a plan",
+//       body:  "Browse hundreds of verified listings. Filter by service, price, or available slots.",
+//     },
+//     {
+//       icon: "🤝",
+//       title: "Request to join",
+//       body:  "Send a request with one tap. Chat with the host and confirm every detail.",
+//     },
+//     {
+//       icon: "💸",
+//       title: "Split and save",
+//       body:  "Pay your share every month. Track savings and manage memberships in one place.",
+//     },
+//   ];
 
-  return (
-    <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
-      <motion.h2
-        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
-                   text-gray-900 dark:text-white mb-10 md:mb-16"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.6, ease: EASE }}
-      >
-        From inspiration to creation.
-      </motion.h2>
+//   return (
+//     <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
+//       <motion.h2
+//         className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
+//                    text-gray-900 dark:text-white mb-10 md:mb-16"
+//         initial={{ opacity: 0, y: 30 }}
+//         whileInView={{ opacity: 1, y: 0 }}
+//         viewport={{ once: true, margin: "-60px" }}
+//         transition={{ duration: 0.6, ease: EASE }}
+//       >
+//         From inspiration to creation.
+//       </motion.h2>
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {steps.map((step, i) => (
-          <motion.div
-            key={i}
-            className="bg-gray-50 dark:bg-slate-900 rounded-2xl p-7 border border-gray-100
-                       dark:border-slate-800 flex flex-col gap-4"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ delay: i * 0.1, duration: 0.55, ease: EASE }}
-            whileHover={{ y: -5, transition: { duration: 0.2 } }}
-          >
-            <span className="text-3xl">{step.icon}</span>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
-              {step.title}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-              {step.body}
-            </p>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
+//       <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+//         {steps.map((step, i) => (
+//           <motion.div
+//             key={i}
+//             className="bg-gray-50 dark:bg-slate-900 rounded-2xl p-7 border border-gray-100
+//                        dark:border-slate-800 flex flex-col gap-4"
+//             initial={{ opacity: 0, y: 40 }}
+//             whileInView={{ opacity: 1, y: 0 }}
+//             viewport={{ once: true, margin: "-40px" }}
+//             transition={{ delay: i * 0.1, duration: 0.55, ease: EASE }}
+//             whileHover={{ y: -5, transition: { duration: 0.2 } }}
+//           >
+//             <span className="text-3xl">{step.icon}</span>
+//             <h3 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
+//               {step.title}
+//             </h3>
+//             <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+//               {step.body}
+//             </p>
+//           </motion.div>
+//         ))}
+//       </div>
+//     </section>
+//   );
+// }
+
+function initialsOf(name: string) {
+  return name.split(/\s+/).map(p => p[0]).join("").slice(0, 2).toUpperCase();
 }
 
-/** ⑧ Testimonials — masonry-style quote cards */
-function TestimonialsSection() {
-  return (
-    <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
-      <motion.h2
-        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
-                   text-gray-900 dark:text-white mb-10 md:mb-16"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.6, ease: EASE }}
-      >
-        What our users are saying.
-      </motion.h2>
-
-      <div className="max-w-5xl mx-auto columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
-        {TESTIMONIALS.map((t, i) => (
-          <motion.div
-            key={i}
-            className="break-inside-avoid bg-white dark:bg-slate-900 rounded-2xl p-6
-                       border border-gray-100 dark:border-slate-800
-                       hover:shadow-lg hover:shadow-gray-100/80 dark:hover:shadow-black/20
-                       transition-shadow duration-200"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-30px" }}
-            transition={{ delay: (i % 3) * 0.08, duration: 0.55, ease: EASE }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center
-                           text-white text-sm font-bold flex-shrink-0"
-                style={{ backgroundColor: t.color }}
-              >
-                {t.initials}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500">{t.role}</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t.text}</p>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
+function testimonialColor(name: string) {
+  const palette = ["#4f46e5", "#0ea5e9", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6", "#10a37f", "#D97757"];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
 }
 
+/** ⑧ Testimonials — bento-grid with auto-cycling cards */
+function TestimonialsSection({ testimonials }: { testimonials: LandingTestimonial[] }) {
+  const n = testimonials.length;
+  const [idx, setIdx] = useState(0);
 
-/** ⑩ Pricing — free during beta, urgency-driven */
-function PricingSection() {
-  const features = [
-    "Browse all available listings",
-    "Join up to 3 subscription plans",
-    "Host unlimited plans",
-    "Built-in member messaging",
-    "Verified member badge",
-    "Priority support during beta",
-  ];
+  useEffect(() => {
+    const id = setInterval(() => setIdx(i => (i + 1) % n), 3800);
+    return () => clearInterval(id);
+  }, [n]);
+
+  const t0 = testimonials[idx % n];
+  const t1 = testimonials[(idx + 1) % n];
+  const t2 = testimonials[(idx + 2) % n];
+  const t3 = testimonials[(idx + 3) % n];
+
+  const enter = { opacity: 0, y: 28 };
+  const show  = { opacity: 1, y: 0  };
+  const leave = { opacity: 0, y: -18 };
+
+  const QuoteIcon = ({ size = 5 }: { size?: number }) => (
+    <svg
+      className={`w-${size} h-${size} text-emerald-500 mb-2 flex-shrink-0`}
+      fill="currentColor" viewBox="0 0 24 24"
+    >
+      <path d="M14.017 21v-7.391c0-5.704 3.748-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983z" />
+    </svg>
+  );
 
   return (
-    <section className="relative py-16 md:py-28 px-4 bg-gray-50 dark:bg-slate-900 overflow-hidden">
+    <section className="py-16 md:py-28 px-4 bg-gray-50 dark:bg-slate-900">
 
-      {/* ── Background gradient orbs ── */}
-      <div
-        className="absolute -top-32 -left-32 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)" }}
-      />
-      <div
-        className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(168,85,247,0.10) 0%, transparent 70%)" }}
-      />
+      {/* Header */}
+      <div className="text-center mb-12 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-500 uppercase tracking-widest mb-5">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M4 1H1v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Testimonials
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M6 1h3v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
 
-      {/* ── Section heading ── */}
-      <div className="relative z-10 text-center mb-14 max-w-2xl mx-auto">
-
-        {/* Live badge */}
-        <motion.div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border
-                     border-emerald-200 dark:border-emerald-800/50
-                     bg-emerald-50 dark:bg-emerald-900/20 mb-6"
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease: EASE }}
-        >
-          <motion.span
-            className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"
-            animate={{ scale: [1, 1.5, 1], opacity: [1, 0.4, 1] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-            Free during early access
-          </span>
-        </motion.div>
-
-        <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none
-                       text-gray-900 dark:text-white mb-5">
-          <RevealText text="Everything's free," delay={0.05} />
-          <br />
-          <RevealText text="for now." delay={0.25} />
+        <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight mb-2">
+          Results that speak for themselves.
         </h2>
-
-        <motion.p
-          className="text-base sm:text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55, delay: 0.35, ease: EASE }}
-        >
-          We&apos;re in early access. All features are completely free while we grow.
-          <br />
-          Lock in your spot before pricing starts.
-        </motion.p>
       </div>
 
-      {/* ── Pricing card ── */}
-      <motion.div
-        className="relative z-10 max-w-md mx-auto"
-        initial={{ opacity: 0, y: 50, scale: 0.96 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.65, ease: EASE }}
-      >
-        {/* Animated gradient border wrapper */}
-        <motion.div
-          className="rounded-3xl p-[1.5px]"
-          style={{ background: "linear-gradient(135deg, #6366f1, #a855f7, #ec4899)" }}
-          animate={{
-            boxShadow: [
-              "0 0 0px 0px rgba(99,102,241,0)",
-              "0 0 40px 8px rgba(99,102,241,0.20)",
-              "0 0 0px 0px rgba(99,102,241,0)",
-            ],
-          }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <div className="bg-white dark:bg-slate-950 rounded-[22px] p-8">
+      {/* Bento grid */}
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            {/* Card top — badge + plan name */}
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                Early Access
+        {/* Large left card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`large-${idx}`}
+            initial={enter} animate={show} exit={leave}
+            transition={{ duration: 0.45, ease: EASE }}
+            className="bg-white dark:bg-slate-950 rounded-3xl p-8 flex flex-col
+                       border border-gray-100 dark:border-slate-800 min-h-[340px]"
+          >
+            <div className="mb-5">
+              <span className="text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
+                {t0.metric}
               </span>
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-900
-                               dark:bg-white text-white dark:text-gray-900 text-[10px] font-black uppercase tracking-wide">
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
-                >
-                  ●
-                </motion.span>
-                Limited time
-              </span>
+              <p className="text-sm font-semibold text-gray-400 dark:text-slate-500 mt-1">{t0.metricLabel}</p>
             </div>
-
-            {/* Price block */}
-            <div className="mb-7">
-              {/* Strikethrough old price with animated line */}
-              <div className="relative inline-flex items-center gap-2 mb-2">
-                <span className="text-lg text-gray-400 dark:text-slate-500 font-semibold">₹299</span>
-                <motion.div
-                  className="absolute top-1/2 left-0 h-[2px] bg-red-400 rounded-full"
-                  initial={{ width: 0 }}
-                  whileInView={{ width: "100%" }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.45, delay: 0.7, ease: EASE }}
-                />
-                <span className="text-xs font-semibold text-red-400">saved</span>
-              </div>
-
-              {/* Free price */}
-              <div className="flex items-end gap-2">
-                <motion.span
-                  className="text-7xl font-black text-gray-900 dark:text-white leading-none tracking-tighter"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.5, ease: EASE }}
+            <QuoteIcon size={6} />
+            <p className="text-gray-600 dark:text-slate-300 leading-relaxed flex-1">
+              &ldquo;{t0.body}&rdquo;
+            </p>
+            <div className="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100 dark:border-slate-800">
+              {t0.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={t0.avatarUrl} alt={t0.authorName}
+                     className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-100 dark:ring-slate-800" />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                  style={{ backgroundColor: testimonialColor(t0.authorName) }}
                 >
-                  ₹0
-                </motion.span>
-                <span className="text-base text-gray-400 dark:text-slate-500 font-medium mb-2">/ month</span>
+                  {initialsOf(t0.authorName)}
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">{t0.authorName}</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{t0.authorRole}</p>
               </div>
-              <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-                No credit card required
-              </p>
             </div>
+          </motion.div>
+        </AnimatePresence>
 
-            {/* Divider */}
-            <div className="h-px bg-gray-100 dark:bg-slate-800 mb-6" />
+        {/* Right column */}
+        <div className="flex flex-col gap-4">
 
-            {/* Feature list */}
-            <ul className="space-y-3 mb-8">
-              {features.map((f, i) => (
-                <motion.li
-                  key={f}
-                  className="flex items-center gap-3 text-sm text-gray-700 dark:text-slate-300 font-medium"
-                  initial={{ opacity: 0, x: -12 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.4 + i * 0.07, duration: 0.4, ease: EASE }}
-                >
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40
-                                   flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none"
-                         viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </span>
-                  {f}
-                </motion.li>
-              ))}
-            </ul>
-
-            {/* CTA button */}
-            <motion.div whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/sign-up"
-                className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl
-                           bg-gray-900 dark:bg-white text-white dark:text-gray-900
-                           text-base font-bold hover:bg-gray-700 dark:hover:bg-slate-100
-                           transition-colors shadow-lg shadow-gray-900/15"
-              >
-                Join for free — it&apos;s ₹0
-                <motion.span
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  →
-                </motion.span>
-              </Link>
-            </motion.div>
-
-            {/* Social proof */}
+          {/* Medium top card */}
+          <AnimatePresence mode="wait">
             <motion.div
-              className="flex items-center justify-center gap-2 mt-5"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.9, duration: 0.5 }}
+              key={`mid-${idx}`}
+              initial={enter} animate={show} exit={leave}
+              transition={{ duration: 0.45, delay: 0.07, ease: EASE }}
+              className="bg-white dark:bg-slate-950 rounded-3xl p-6 flex flex-col
+                         border border-gray-100 dark:border-slate-800"
             >
-              <motion.span
-                className="text-yellow-400"
-                animate={{ rotate: [0, 15, -15, 0] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              >
-                ⚡
-              </motion.span>
-              <span className="text-xs font-semibold text-gray-500 dark:text-slate-400">
-                12,000+ members already joined for free
-              </span>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+                  {t1.metric}
+                </span>
+                <span className="text-sm font-semibold text-gray-400 dark:text-slate-500">{t1.metricLabel}</span>
+              </div>
+              <QuoteIcon size={5} />
+              <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed flex-1">
+                &ldquo;{t1.body}&rdquo;
+              </p>
+              <div className="flex items-center gap-2.5 mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
+                {t1.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={t1.avatarUrl} alt={t1.authorName}
+                       className="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-gray-100 dark:ring-slate-800" />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                    style={{ backgroundColor: testimonialColor(t1.authorName) }}
+                  >
+                    {initialsOf(t1.authorName)}
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">{t1.authorName}</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{t1.authorRole}</p>
+                </div>
+              </div>
             </motion.div>
+          </AnimatePresence>
 
+          {/* Two small cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`sm1-${idx}`}
+                initial={enter} animate={show} exit={leave}
+                transition={{ duration: 0.45, delay: 0.13, ease: EASE }}
+                className="bg-white dark:bg-slate-950 rounded-3xl p-5 flex flex-col
+                           border border-gray-100 dark:border-slate-800"
+              >
+                <QuoteIcon size={4} />
+                <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed flex-1 line-clamp-4">
+                  &ldquo;{t2.body}&rdquo;
+                </p>
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-slate-800">
+                  {t2.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t2.avatarUrl} alt={t2.authorName}
+                         className="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-gray-100 dark:ring-slate-800" />
+                  ) : (
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0"
+                      style={{ backgroundColor: testimonialColor(t2.authorName) }}
+                    >
+                      {initialsOf(t2.authorName)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none truncate">{t2.authorName}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">{t2.authorRole.split(",")[0]}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`sm2-${idx}`}
+                initial={enter} animate={show} exit={leave}
+                transition={{ duration: 0.45, delay: 0.19, ease: EASE }}
+                className="bg-white dark:bg-slate-950 rounded-3xl p-5 flex flex-col
+                           border border-gray-100 dark:border-slate-800"
+              >
+                <QuoteIcon size={4} />
+                <p className="text-xs text-gray-600 dark:text-slate-300 leading-relaxed flex-1 line-clamp-4">
+                  &ldquo;{t3.body}&rdquo;
+                </p>
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-slate-800">
+                  {t3.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t3.avatarUrl} alt={t3.authorName}
+                         className="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-gray-100 dark:ring-slate-800" />
+                  ) : (
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0"
+                      style={{ backgroundColor: testimonialColor(t3.authorName) }}
+                    >
+                      {initialsOf(t3.authorName)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none truncate">{t3.authorName}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate">{t3.authorRole.split(",")[0]}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
-      {/* ── Urgency note below card ── */}
-      <motion.p
-        className="relative z-10 text-center text-xs text-gray-400 dark:text-slate-600
-                   font-medium mt-8"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.5, duration: 0.5 }}
-      >
-        Pricing will be introduced when we exit beta. Early members keep free access.
-      </motion.p>
-
+      {/* Dot indicators */}
+      <div className="flex justify-center items-center gap-1.5 mt-8">
+        {testimonials.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === idx ? "w-6 bg-emerald-500" : "w-1.5 bg-gray-300 dark:bg-slate-700"
+            }`}
+          />
+        ))}
+      </div>
     </section>
   );
 }
 
-/** ⑪ Final CTA */
+
+
+/** ⑪ Final CTA — card with orbit visual */
 function CTASection() {
+  const ORBIT_POS = [
+    { top: "14%", left: "52%" },
+    { top: "32%", left: "86%" },
+    { top: "66%", left: "88%" },
+    { top: "84%", left: "52%" },
+    { top: "54%", left: "10%" },
+    { top: "20%", left: "18%" },
+  ];
+  const avatars = ORBIT_POS.map((pos, i) => ({ ...pos, ...FALLBACK_TESTIMONIALS[i] }));
+
   return (
-    <section className="py-16 md:py-28 px-4 text-center bg-white dark:bg-slate-950">
-      <motion.h2
-        className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none
-                   text-gray-900 dark:text-white mb-6"
+    <section className="py-16 md:py-20 px-4 bg-gray-50 dark:bg-slate-900">
+      <motion.div
+        className="max-w-5xl mx-auto bg-white dark:bg-slate-950 rounded-3xl overflow-hidden
+                   border border-gray-100 dark:border-slate-800 shadow-sm"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.6, ease: EASE }}
       >
-        Start splitting today.
-      </motion.h2>
+        <div className="grid grid-cols-1 md:grid-cols-2">
 
-      <motion.p
-        className="text-base sm:text-xl text-gray-500 dark:text-slate-400 font-medium mb-10
-                   max-w-md mx-auto leading-relaxed"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
-      >
-        Join thousands of members already saving money every month on the subscriptions they love.
-      </motion.p>
+          {/* Left: text + CTA */}
+          <div className="flex flex-col justify-center p-10 md:p-14">
+            <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
+              Start splitting today
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight mb-4">
+              Split smarter,<br />save more.
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed mb-8 max-w-xs">
+              Share subscriptions with verified members. Save up to{" "}
+              <span className="font-bold text-gray-900 dark:text-white">₹2,000/month</span>{" "}
+              on the tools you love — completely{" "}
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">free</span>.
+            </p>
+            <Link
+              href="/sign-up"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gray-900 dark:bg-white
+                         text-white dark:text-gray-900 text-sm font-bold w-fit
+                         hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors shadow-sm"
+            >
+              Get started for free
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 17 17 7M17 7H7M17 7v10" />
+              </svg>
+            </Link>
+          </div>
 
-      <motion.div
-        className="flex flex-col sm:flex-row items-center justify-center gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.2, ease: EASE }}
-      >
-        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
-          <Link
-            href="/sign-up"
-            className="flex items-center justify-center px-8 py-4 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900
-                       text-base font-bold hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors
-                       shadow-xl shadow-gray-900/15 w-full sm:w-auto"
-          >
-            Join for free
-          </Link>
-        </motion.div>
-        <motion.div whileTap={{ scale: 0.96 }} className="w-full sm:w-auto">
-          <Link
-            href="/browse"
-            className="flex items-center justify-center px-8 py-4 rounded-full text-base font-bold text-gray-900 dark:text-white
-                       border border-gray-300 dark:border-slate-700 hover:border-gray-500
-                       dark:hover:border-slate-500 transition-all w-full sm:w-auto"
-          >
-            Browse plans →
-          </Link>
-        </motion.div>
+          {/* Right: orbit visual */}
+          <div className="relative hidden md:block min-h-[320px] bg-gray-50 dark:bg-slate-900/40 overflow-hidden">
+            {/* Concentric dashed rings */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              {[34, 58, 84].map((pct, i) => (
+                <div
+                  key={i}
+                  className="absolute rounded-full border border-dashed border-gray-200 dark:border-slate-700/60"
+                  style={{ width: `${pct}%`, height: `${pct}%` }}
+                />
+              ))}
+            </div>
+
+            {/* Center icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-gray-900 dark:bg-white flex items-center justify-center shadow-md">
+                <svg className="w-5 h-5 text-white dark:text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Orbiting avatars */}
+            {avatars.map((a, i) => (
+              <motion.div
+                key={i}
+                className="absolute -translate-x-1/2 -translate-y-1/2"
+                style={{ top: a.top, left: a.left }}
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 3 + i * 0.55, repeat: Infinity, ease: "easeInOut", delay: i * 0.45 }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={a.avatarUrl ?? undefined}
+                  alt={a.authorName}
+                  className="w-10 h-10 rounded-full object-cover shadow-md ring-2 ring-white dark:ring-slate-950"
+                />
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
       </motion.div>
     </section>
   );
 }
 
-/** ⑪ Footer — dark background, minimal links */
+/** ⑫ Footer */
 function Footer() {
   return (
-    <footer className="bg-gray-950 dark:bg-black text-white py-16 px-4">
+    <footer className="bg-gray-50 dark:bg-slate-900 px-4 pb-10">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between gap-10 mb-12">
+
+        <div className="border-t border-gray-200 dark:border-slate-800 mb-10" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10">
+
+          {/* Logo + tagline */}
           <div>
-            {/* Footer is always dark bg — use dark logo directly */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-dark.png"
-              alt="LetsSplit"
-              className="h-12 w-auto object-contain mb-3"
-            />
-            <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+            <img src="/logo-light.png" alt="LetsSplit" className="h-8 w-auto object-contain mb-3 dark:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-dark.png"  alt="LetsSplit" className="h-8 w-auto object-contain mb-3 hidden dark:block" />
+            <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed max-w-[200px]">
               The cleanest way to share subscriptions with people you trust.
             </p>
           </div>
-          <div className="flex gap-10 sm:gap-16">
+
+          {/* Company links */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
+              Company
+            </p>
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-1">Product</p>
-              {["Browse", "Pricing", "How it works", "Blog"].map((l) => (
-                <Link key={l} href="#" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  {l}
-                </Link>
-              ))}
-            </div>
-            <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-1">Connect</p>
-              {["X (Twitter)", "LinkedIn", "Instagram", "Discord"].map((l) => (
-                <Link key={l} href="#" className="text-sm text-gray-400 hover:text-white transition-colors">
-                  {l}
+              {[
+                { label: "Browse plans", href: "/browse"  },
+                { label: "About",        href: "/about"   },
+                { label: "FAQ",          href: "/faq"     },
+                { label: "Contact us",   href: "/contact" },
+              ].map(({ label, href }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="text-sm text-gray-500 dark:text-slate-400
+                             hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  {label}
                 </Link>
               ))}
             </div>
           </div>
+
+          {/* Newsletter */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
+              Newsletter
+            </p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-4 leading-relaxed">
+              Get updates on new features and early access.
+            </p>
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-950 rounded-full
+                            border border-gray-200 dark:border-slate-700 px-3.5 py-2 shadow-sm">
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+              <input
+                type="email"
+                placeholder="Enter your email..."
+                className="flex-1 bg-transparent text-sm text-gray-700 dark:text-slate-200
+                           placeholder:text-gray-400 dark:placeholder:text-slate-500 outline-none min-w-0"
+              />
+              <button
+                type="button"
+                className="w-7 h-7 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center
+                           hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors flex-shrink-0"
+              >
+                <svg className="w-3.5 h-3.5 text-white dark:text-gray-900" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
         </div>
-        <div className="border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between gap-4">
-          <p className="text-xs text-gray-600">© LetsSplit 2024–2025. All rights reserved.</p>
-          <div className="flex gap-6">
-            {["Privacy policy", "Terms"].map((l) => (
-              <Link key={l} href="#" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">
-                {l}
+
+        {/* Bottom bar */}
+        <div className="border-t border-gray-200 dark:border-slate-800 pt-6
+                        flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p className="text-xs text-gray-400 dark:text-slate-500">
+            © 2026 LetsSplit · All rights reserved
+          </p>
+          <div className="flex gap-5">
+            {[
+              { label: "Privacy policy", href: "/privacy" },
+              { label: "Terms",          href: "/terms"   },
+            ].map(({ label, href }) => (
+              <Link
+                key={label}
+                href={href}
+                className="text-xs text-gray-400 dark:text-slate-500
+                           hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
+              >
+                {label}
               </Link>
             ))}
           </div>
         </div>
+
       </div>
     </footer>
   );
@@ -1507,18 +1406,15 @@ function Footer() {
 
 // ─── Root Export ──────────────────────────────────────────────────────────────
 
-export default function LandingPage() {
+export default function LandingPage({ testimonials }: { testimonials?: LandingTestimonial[] }) {
   return (
     <main className="bg-white dark:bg-slate-950">
       <LandingNav />
       <HeroSection />
       <SocialProofSection />
-      <ProductPreviewSection />
-      <StatsSection />
       <FeaturesSection />
-      <HowItWorksSection />
-      <TestimonialsSection />
-      <PricingSection />
+      {/* <HowItWorksSection /> */}
+      <TestimonialsSection testimonials={testimonials?.length ? testimonials : FALLBACK_TESTIMONIALS} />
       <CTASection />
       <Footer />
     </main>

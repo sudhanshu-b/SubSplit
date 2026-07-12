@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { subscription, service, appUser, membership } from "@/db/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -27,7 +27,8 @@ export async function GET(req: NextRequest) {
     .groupBy(membership.subscriptionId)
     .as("active_member_counts");
 
-  const baseFilter = eq(subscription.status, "active");
+  // Show listings that are still open (recruiting) or have hit minimum (ready_to_purchase)
+  const baseFilter = inArray(subscription.status, ["recruiting", "ready_to_purchase"]);
 
   // Raw SQL search so nullable description doesn't cause TS issues
   const searchFilter = q
@@ -55,8 +56,10 @@ export async function GET(req: NextRequest) {
       pricePerSeat:  subscription.pricePerSeat,
       currency:      subscription.currency,
       region:        subscription.region,
+      status:        subscription.status,
       serviceName:   service.name,
       hostName:      appUser.name,
+      hostImage:     appUser.image,
       activeMembers: sql<number>`coalesce(${activeMemberCounts.count}, 0)`,
     })
     .from(subscription)
@@ -75,11 +78,13 @@ export async function GET(req: NextRequest) {
     description:    r.description,
     serviceName:    r.serviceName,
     hostName:       r.hostName,
+    hostImage:      r.hostImage,
     pricePerSeat:   Number(r.pricePerSeat ?? 0),
     currency:       r.currency,
     totalSeats:     r.totalSeats,
     remainingSeats: r.totalSeats - r.activeMembers,
     region:         r.region,
+    status:         r.status,
   }));
 
   return NextResponse.json({ listings, hasMore, page });

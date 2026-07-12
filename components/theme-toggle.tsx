@@ -44,11 +44,11 @@ export default function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
   const icon = theme === "dark" ? (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4"
+      className={variant === "icon" ? "w-4.5 h-4.5" : "h-4 w-4"}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={variant === "icon" ? 1.8 : 2}
       aria-hidden="true"
     >
       <path
@@ -60,11 +60,11 @@ export default function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
   ) : (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4"
+      className={variant === "icon" ? "w-4.5 h-4.5" : "h-4 w-4"}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={variant === "icon" ? 1.8 : 2}
       aria-hidden="true"
     >
       <path
@@ -94,7 +94,10 @@ export default function ThemeToggle({ variant = "icon" }: ThemeToggleProps) {
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-white"
+      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl
+                 text-zinc-500 dark:text-zinc-400
+                 hover:bg-zinc-100 dark:hover:bg-zinc-800
+                 transition-colors duration-200"
       aria-label={label}
       title={label}
     >

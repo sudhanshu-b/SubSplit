@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Spinner from "@/components/spinner";
+import { Toast, type ToastState } from "@/components/ui/toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -57,6 +58,8 @@ const DURATION_OPTIONS = [
   { days: 365, label: "Annual",    sub: "365 days" },
 ] as const;
 
+const UPI_RE = /^[a-zA-Z0-9._\-]{2,256}@[a-zA-Z]{2,64}$/;
+
 type FormData = {
   serviceId:             string;   // "__custom__" = user-typed
   customServiceName:     string;
@@ -68,6 +71,7 @@ type FormData = {
   priceTotal:            string;
   durationDays:          number;
   paymentTerms:          "upfront" | "split_30" | "";
+  upiId:                 string;
 };
 
 // ── Step progress bar ──────────────────────────────────────────────────────
@@ -628,15 +632,25 @@ function Step4({
         )}
       </AnimatePresence>
 
-      {/* Region — currently India only, UI hidden */}
-      {/* TODO: uncomment when multi-region is supported
+      {/* UPI ID */}
       <div className="mt-6">
-        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-          Region
+        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
+          Your UPI ID <span className="font-normal normal-case text-zinc-400">(optional)</span>
         </label>
-        ...region chips...
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-600 mb-2">
+          Approved members will use this to send their payment. Only visible after joining.
+        </p>
+        <Input
+          type="text"
+          value={form.upiId}
+          onChange={(e) => onChange({ upiId: e.target.value.trim() })}
+          placeholder="username@bank"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+        />
       </div>
-      */}
     </div>
   );
 }
@@ -674,6 +688,9 @@ function Step5({
     { label: "Duration",    value: DURATION_OPTIONS.find((d) => d.days === form.durationDays)?.label ?? `${form.durationDays} days`,   step: 4 },
     ...(form.durationDays > 30 && form.paymentTerms
       ? [{ label: "Payment", value: form.paymentTerms === "upfront" ? "Full upfront" : "50% now · 50% after 30 days",                  step: 4 }]
+      : []),
+    ...(form.upiId
+      ? [{ label: "UPI ID",  value: form.upiId,                                                                                         step: 4 }]
       : []),
   ];
 
@@ -742,6 +759,7 @@ export default function CreateListingForm({ services }: { services: DbService[] 
   const [loading,    setLoading]    = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [error,      setError]      = useState("");
+  const [toast,      setToast]      = useState<ToastState>(null);
 
   const [form, setForm] = useState<FormData>({
     serviceId:             "",
@@ -754,6 +772,7 @@ export default function CreateListingForm({ services }: { services: DbService[] 
     priceTotal:            "",
     durationDays:          30,
     paymentTerms:          "",
+    upiId:                 "",
   });
 
   function patch(p: Partial<FormData>) {
@@ -779,6 +798,8 @@ export default function CreateListingForm({ services }: { services: DbService[] 
         return "Please enter the total plan cost.";
       if (form.durationDays > 30 && !form.paymentTerms)
         return "Please select payment terms for this plan duration.";
+      if (form.upiId && !UPI_RE.test(form.upiId))
+        return "Please enter a valid UPI ID (e.g., username@bank).";
     }
     return "";
   }
@@ -814,6 +835,7 @@ export default function CreateListingForm({ services }: { services: DbService[] 
       region:                "IN",            // India only for now
       durationDays:          form.durationDays,
       paymentTerms:          form.durationDays > 30 ? form.paymentTerms : undefined,
+      upiId:                 form.upiId || undefined,
     };
 
     try {
@@ -824,12 +846,13 @@ export default function CreateListingForm({ services }: { services: DbService[] 
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setToast({ msg: data.error ?? "Something went wrong. Please try again.", type: "error" });
         return;
       }
-      router.push(`/listings/${data.id}`);
+      setToast({ msg: "Listing published!", type: "success" });
+      setTimeout(() => router.push(`/listings/${data.id}`), 900);
     } catch {
-      setError("Network error — please check your connection.");
+      setToast({ msg: "Network error — please check your connection.", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -881,19 +904,8 @@ export default function CreateListingForm({ services }: { services: DbService[] 
         </motion.div>
       </AnimatePresence>
 
-      {/* Error */}
       <AnimatePresence>
-        {error && (
-          <motion.p
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="mt-4 text-sm font-medium text-red-500 dark:text-red-400"
-          >
-            {error}
-          </motion.p>
-        )}
+        {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       </AnimatePresence>
 
       {/* Navigation */}

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { subscription, service, appUser, membership } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -9,8 +9,9 @@ import ListingDrawer from "@/components/listing-drawer";
 type Params = Promise<{ id: string }>;
 
 export default async function ListingDetailPage({ params }: { params: Params }) {
+  // Publicly viewable so hosts can share a direct link — auth is only
+  // required to actually request to join (see actionState "guest" below).
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
 
   const { id } = await params;
 
@@ -33,6 +34,7 @@ export default async function ListingDetailPage({ params }: { params: Params }) 
       serviceCategory: service.category,
       hostId:          appUser.id,
       hostName:        appUser.name,
+      hostImage:       appUser.image,
       durationDays:    subscription.durationDays,
       paymentTerms:    subscription.paymentTerms,
     })
@@ -50,23 +52,26 @@ export default async function ListingDetailPage({ params }: { params: Params }) 
       .from(membership)
       .where(and(eq(membership.subscriptionId, id), eq(membership.status, "active")))
       .then(([r]) => r.count),
-    db
-      .select({ status: membership.status })
-      .from(membership)
-      .where(and(eq(membership.subscriptionId, id), eq(membership.memberId, session.user.id)))
-      .limit(1)
-      .then(rows => rows[0] ?? null),
+    session
+      ? db
+          .select({ status: membership.status })
+          .from(membership)
+          .where(and(eq(membership.subscriptionId, id), eq(membership.memberId, session.user.id)))
+          .limit(1)
+          .then(rows => rows[0] ?? null)
+      : Promise.resolve(null),
   ]);
 
   const remainingSeats = listing.totalSeats - memberCount;
-  const isHost         = listing.hostId === session.user.id;
+  const isHost         = session ? listing.hostId === session.user.id : false;
 
   const pendingRequests = isHost
     ? await db
         .select({
-          memberId:   membership.memberId,
-          memberName: appUser.name,
-          createdAt:  membership.createdAt,
+          memberId:    membership.memberId,
+          memberName:  appUser.name,
+          memberImage: appUser.image,
+          createdAt:   membership.createdAt,
         })
         .from(membership)
         .innerJoin(appUser, eq(membership.memberId, appUser.id))
@@ -74,12 +79,14 @@ export default async function ListingDetailPage({ params }: { params: Params }) 
         .orderBy(membership.createdAt)
     : [];
 
-  type ActionState = "host" | "active" | "pending" | "rejected" | "full" | "join";
+  type ActionState = "host" | "active" | "pending" | "rejected" | "full" | "join" | "locked" | "guest";
   let actionState: ActionState = "join";
-  if (isHost)                                        actionState = "host";
+  if (!session)                                      actionState = "guest";
+  else if (isHost)                                   actionState = "host";
   else if (viewerMembership?.status === "active")    actionState = "active";
   else if (viewerMembership?.status === "pending")   actionState = "pending";
   else if (viewerMembership?.status === "rejected")  actionState = "rejected";
+  else if (listing.status !== "recruiting")          actionState = "locked";
   else if (remainingSeats <= 0)                      actionState = "full";
 
   return (

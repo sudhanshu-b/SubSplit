@@ -32,11 +32,13 @@ export type BrowseListing = {
   description:    string | null;
   serviceName:    string;
   hostName:       string;
+  hostImage:      string | null;
   pricePerSeat:   number;
   currency:       string;
   totalSeats:     number;
   remainingSeats: number;
   region:         string | null;
+  status:         string;
 };
 
 // ── Currency symbol helper ─────────────────────────────────────────────────
@@ -154,13 +156,22 @@ export default function BrowseCard({
           {/* ── Footer: host + price ── */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span
-                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
-                           text-[9px] font-bold text-zinc-600 dark:text-zinc-300"
-                style={{ backgroundColor: bg + "22" }}
-              >
-                {hostInitial}
-              </span>
+              {listing.hostImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={listing.hostImage}
+                  alt=""
+                  className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
+                             text-[9px] font-bold text-zinc-600 dark:text-zinc-300"
+                  style={{ backgroundColor: bg + "22" }}
+                >
+                  {hostInitial}
+                </span>
+              )}
               <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium truncate">
                 {listing.hostName}
               </span>

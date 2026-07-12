@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import ResendVerification from "@/components/resend-verification";
+import AvatarUpload from "@/components/avatar-upload";
 
 export const metadata = { title: "Profile · LetsSplit" };
 
@@ -45,14 +46,6 @@ export default async function ProfilePage() {
 
   const user = session.user as ProfileUser;
 
-  const initials =
-    user.name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(p => p[0]?.toUpperCase())
-      .join("") || "U";
-
   const firstName = user.name.split(" ")[0] ?? user.name;
 
   const memberSince = user.createdAt
@@ -74,14 +67,7 @@ export default async function ProfilePage() {
 
         {/* ── Avatar + name ────────────────────────────────────────────── */}
         <div className="flex items-center gap-4 mb-10">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full flex-shrink-0
-                           bg-zinc-200 dark:bg-zinc-800 overflow-hidden
-                           text-lg font-bold text-zinc-700 dark:text-zinc-300">
-            {user.image
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={user.image} alt="" className="h-full w-full object-cover" />
-              : initials}
-          </span>
+          <AvatarUpload name={user.name} image={user.image ?? null} />
 
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 leading-snug truncate">

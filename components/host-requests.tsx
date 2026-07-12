@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Toast, type ToastState } from "@/components/ui/toast";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 type Request = {
   memberId: string;
   memberName: string;
+  memberImage: string | null;
   createdAt: Date;
 };
 
@@ -29,26 +31,34 @@ function timeAgo(date: Date): string {
 export default function HostRequests({ listingId, initialRequests }: Props) {
   const [requests,   setRequests]   = useState(initialRequests);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [error,      setError]      = useState("");
+  const [toast,      setToast]      = useState<ToastState>(null);
 
   async function handleAction(memberId: string, action: "approve" | "reject") {
     setProcessing(memberId);
-    setError("");
 
-    const res  = await fetch(`/api/listings/${listingId}/requests/${memberId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    const data = await res.json();
-    setProcessing(null);
+    try {
+      const res  = await fetch(`/api/listings/${listingId}/requests/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
-      return;
+      if (!res.ok) {
+        setToast({ msg: data.error ?? "Something went wrong.", type: "error" });
+        return;
+      }
+
+      setRequests(prev => prev.filter(r => r.memberId !== memberId));
+      setToast({
+        msg:  action === "approve" ? "Member approved." : "Request rejected.",
+        type: action === "approve" ? "success" : "info",
+      });
+    } catch {
+      setToast({ msg: "Network error. Try again.", type: "error" });
+    } finally {
+      setProcessing(null);
     }
-
-    setRequests(prev => prev.filter(r => r.memberId !== memberId));
   }
 
   return (
@@ -69,9 +79,9 @@ export default function HostRequests({ listingId, initialRequests }: Props) {
         )}
       </div>
 
-      {error && (
-        <p className="text-[11px] text-red-500 dark:text-red-400 mb-4">{error}</p>
-      )}
+      <AnimatePresence>
+        {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
+      </AnimatePresence>
 
       {requests.length === 0 ? (
         <p className="text-sm text-zinc-400 dark:text-zinc-600">
@@ -93,11 +103,20 @@ export default function HostRequests({ listingId, initialRequests }: Props) {
                                 border-b border-zinc-100 dark:border-zinc-800/70 last:border-0">
                   {/* Left: initial + name + time */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0
-                                     bg-zinc-100 dark:bg-zinc-800
-                                     text-xs font-bold text-zinc-600 dark:text-zinc-300">
-                      {req.memberName.charAt(0).toUpperCase()}
-                    </span>
+                    {req.memberImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={req.memberImage}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0
+                                       bg-zinc-100 dark:bg-zinc-800
+                                       text-xs font-bold text-zinc-600 dark:text-zinc-300">
+                        {req.memberName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                         {req.memberName}

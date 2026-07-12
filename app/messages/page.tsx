@@ -7,10 +7,8 @@ import {
   conversation,
   conversationParticipant,
   subscription,
-  appUser,
-  message,
 } from "@/db/schema";
-import { eq, and, ne, isNull, desc, sql, aliasedTable } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export const metadata = { title: "Messages · LetsSplit" };
 
@@ -18,15 +16,14 @@ export default async function MessagesPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
-  const otherParticipation = aliasedTable(conversationParticipant, "other_cp");
-  const otherUser = aliasedTable(appUser, "other_user");
-
   const conversations = await db
     .select({
-      id: conversation.id,
+      id:                conversation.id,
       subscriptionTitle: subscription.title,
-      otherUserName: otherUser.name,
-      otherUserId: otherUser.id,
+      memberCount: sql<number>`(
+        SELECT cast(count(*) as int) FROM conversation_participant
+        WHERE conversation_id = ${conversation.id}
+      )`,
       lastMessageBody: sql<string | null>`(
         SELECT body FROM message
         WHERE conversation_id = ${conversation.id}
@@ -37,11 +34,18 @@ export default async function MessagesPage() {
         WHERE conversation_id = ${conversation.id}
         ORDER BY created_at DESC LIMIT 1
       )`,
+      lastMessageSender: sql<string | null>`(
+        SELECT au.name FROM message m
+        JOIN app_user au ON au.id = m.sender_id
+        WHERE m.conversation_id = ${conversation.id}
+        ORDER BY m.created_at DESC LIMIT 1
+      )`,
       unreadCount: sql<number>`(
-        SELECT cast(count(*) as int) FROM message
-        WHERE conversation_id = ${conversation.id}
-          AND sender_id != ${session.user.id}
-          AND read_at IS NULL
+        SELECT cast(count(*) as int) FROM message m
+        WHERE m.conversation_id = ${conversation.id}
+          AND m.sender_id != ${session.user.id}
+          AND (conversation_participant.last_read_at IS NULL
+            OR m.created_at > conversation_participant.last_read_at)
       )`,
     })
     .from(conversation)
@@ -49,19 +53,14 @@ export default async function MessagesPage() {
       conversationParticipant,
       and(
         eq(conversationParticipant.conversationId, conversation.id),
-        eq(conversationParticipant.userId, session.user.id)
-      )
+        eq(conversationParticipant.userId, session.user.id),
+      ),
     )
-    .innerJoin(
-      otherParticipation,
-      and(
-        eq(otherParticipation.conversationId, conversation.id),
-        ne(otherParticipation.userId, session.user.id)
-      )
-    )
-    .innerJoin(otherUser, eq(otherUser.id, otherParticipation.userId))
     .leftJoin(subscription, eq(subscription.id, conversation.subscriptionId))
-    .orderBy(desc(conversation.createdAt));
+    .orderBy(
+      sql`(SELECT created_at FROM message WHERE conversation_id = ${conversation.id} ORDER BY created_at DESC LIMIT 1) DESC NULLS LAST`,
+      desc(conversation.createdAt),
+    );
 
   function timeAgo(dateStr: string | null) {
     if (!dateStr) return "";
@@ -74,6 +73,8 @@ export default async function MessagesPage() {
     return `${Math.floor(hours / 24)}d`;
   }
 
+  const totalUnread = conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0);
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
 
@@ -83,13 +84,13 @@ export default async function MessagesPage() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Messages</h1>
           {conversations.length > 0 && (
             <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-0.5">
-              {conversations.length} conversation{conversations.length !== 1 ? "s" : ""}
+              {conversations.length} group chat{conversations.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
-        {conversations.some((c) => c.unreadCount > 0) && (
+        {totalUnread > 0 && (
           <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full">
-            {conversations.reduce((n, c) => n + (c.unreadCount ?? 0), 0)} unread
+            {totalUnread} unread
           </span>
         )}
       </div>
@@ -103,9 +104,9 @@ export default async function MessagesPage() {
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">No conversations yet</p>
+            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">No group chats yet</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-              Conversations start automatically when a join request is approved.
+              A group chat opens automatically when a join request is approved.
             </p>
           </div>
           <Link
@@ -118,22 +119,28 @@ export default async function MessagesPage() {
       ) : (
         <div className="flex flex-col gap-2">
           {conversations.map((c) => {
-            const initial = c.otherUserName.charAt(0).toUpperCase();
-            const hasUnread = c.unreadCount > 0;
+            const hasUnread = (c.unreadCount ?? 0) > 0;
+            const chatName  = c.subscriptionTitle ?? "Group Chat";
+            const preview   = c.lastMessageBody
+              ? (c.lastMessageSender ? `${c.lastMessageSender}: ${c.lastMessageBody}` : c.lastMessageBody)
+              : "No messages yet";
+
             return (
               <Link
                 key={c.id}
                 href={`/messages/${c.id}`}
                 className="group flex items-center gap-3.5 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 rounded-2xl px-4 py-3.5 transition-all duration-150 hover:shadow-sm"
               >
-                {/* Avatar with unread dot */}
+                {/* Group avatar */}
                 <div className="relative shrink-0">
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center ${
                     hasUnread
                       ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
                   }`}>
-                    {initial}
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                    </svg>
                   </div>
                   {hasUnread && (
                     <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-zinc-900 dark:bg-zinc-100 border-2 border-white dark:border-zinc-950 flex items-center justify-center text-white dark:text-zinc-900 text-[9px] font-black">
@@ -146,21 +153,19 @@ export default async function MessagesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-0.5">
                     <p className={`text-sm truncate ${hasUnread ? "font-bold text-zinc-900 dark:text-zinc-100" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
-                      {c.otherUserName}
+                      {chatName}
                     </p>
                     <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
                       {timeAgo(c.lastMessageAt)}
                     </span>
                   </div>
 
-                  {c.subscriptionTitle && (
-                    <span className="inline-flex items-center px-1.5 py-px rounded text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 mb-1">
-                      {c.subscriptionTitle}
-                    </span>
-                  )}
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-0.5">
+                    {c.memberCount} member{c.memberCount !== 1 ? "s" : ""}
+                  </p>
 
                   <p className={`text-xs truncate ${hasUnread ? "text-zinc-600 dark:text-zinc-300 font-medium" : "text-zinc-400 dark:text-zinc-500"}`}>
-                    {c.lastMessageBody ?? "No messages yet"}
+                    {preview}
                   </p>
                 </div>
 

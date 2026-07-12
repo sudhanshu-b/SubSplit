@@ -91,6 +91,23 @@ export function resetPasswordEmailHtml(name: string, url: string) {
   `);
 }
 
+export function paymentReminderEmailHtml(
+  memberName: string,
+  hostName:   string,
+  planTitle:  string,
+  amount:     string,
+) {
+  const firstName = memberName.split(" ")[0] ?? memberName;
+  return base(`
+    <div class="eyebrow">Payment reminder</div>
+    <h1>Payment due, ${firstName}.</h1>
+    <p><strong>${hostName}</strong> has sent you a payment reminder for your share of <strong>${planTitle}</strong>.</p>
+    <p>Amount due: <strong>${amount}</strong></p>
+    <a href="https://letssplit.in/home" class="btn">Upload payment proof →</a>
+    <p class="note">Log in to LetsSplit, open your plan, and upload proof of payment to confirm your contribution.</p>
+  `);
+}
+
 export function welcomeEmailHtml(name: string) {
   const firstName = name.split(" ")[0] ?? name;
   return base(`

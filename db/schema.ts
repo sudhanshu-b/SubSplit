@@ -23,11 +23,11 @@ import { sql } from "drizzle-orm";
 // ---------------------------------------------------------------------------
 
 export const subscriptionStatus = pgEnum("subscription_status", [
-  "draft",
-  "active",
-  "full",
-  "expired",
-  "cancelled",
+  "recruiting",        // accepting members
+  "ready_to_purchase", // minimum members reached, host preparing to buy
+  "active",            // subscription purchased, sharing live
+  "completed",         // plan period ended naturally
+  "cancelled",         // host cancelled before going active
 ]);
 
 export const membershipStatus = pgEnum("membership_status", [
@@ -48,6 +48,11 @@ export const paymentStatus = pgEnum("payment_status", [
 export const paymentTerms = pgEnum("payment_terms", [
   "upfront",
   "split_30",
+]);
+
+export const userRole = pgEnum("user_role", [
+  "USER",
+  "ADMIN",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -71,6 +76,8 @@ export const appUser = pgTable("app_user", {
   isPhoneVerified: boolean("is_phone_verified").notNull().default(false),
   // Cached aggregate derived from reviews — updated by app logic, not a live calculation.
   trustScore: numeric("trust_score", { precision: 3, scale: 2 }),
+  role: userRole("role").notNull().default("USER"),
+  banned: boolean("banned").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -125,9 +132,10 @@ export const subscription = pgTable(
     }).generatedAlwaysAs(sql`price_total / total_seats`),
     currency: char("currency", { length: 3 }).notNull().default("USD"),
     region: text("region"),
-    status: subscriptionStatus("status").notNull().default("draft"),
+    status: subscriptionStatus("status").notNull().default("recruiting"),
     durationDays: integer("duration_days"),
     paymentTerms: paymentTerms("payment_terms"),
+    upiId: text("upi_id"),
     activeFrom: date("active_from"),
     activeTill: date("active_till"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -171,6 +179,7 @@ export const membership = pgTable(
       .notNull()
       .default("0"),
     joinedAt: timestamp("joined_at", { withTimezone: true }),
+    lastRemindedAt: timestamp("last_reminded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -183,6 +192,34 @@ export const membership = pgTable(
     unique("membership_unique").on(table.subscriptionId, table.memberId),
     index("idx_membership_sub").on(table.subscriptionId),
     index("idx_membership_member").on(table.memberId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// MEMBERSHIP_PAYMENT
+// Tracks individual payment installments per membership.
+// proof_image_url stores a base64 data URL (MVP — move to object storage later).
+// ---------------------------------------------------------------------------
+
+export const membershipPayment = pgTable(
+  "membership_payment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => membership.id, { onDelete: "cascade" }),
+    installmentNumber: integer("installment_number").notNull().default(1), // 1 or 2
+    amount: numeric("amount", { precision: 10, scale: 2 }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    transactionRef: text("transaction_ref"),
+    proofImageUrl: text("proof_image_url"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("mp_unique").on(table.membershipId, table.installmentNumber),
+    index("idx_mp_membership").on(table.membershipId),
   ],
 );
 
@@ -248,6 +285,7 @@ export const conversationParticipant = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => appUser.id),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
   },
   (table) => [primaryKey({ columns: [table.conversationId, table.userId] })],
 );
@@ -269,6 +307,97 @@ export const message = pgTable(
       .defaultNow(),
   },
   (table) => [index("idx_message_conversation").on(table.conversationId)],
+);
+
+// ---------------------------------------------------------------------------
+// REPORT
+// A user flagging another user for the admin team to review. Submitted via
+// support email today (see FAQ) — this table just gives admins a place to
+// see a count once a report is logged against an account.
+// ---------------------------------------------------------------------------
+
+export const report = pgTable(
+  "report",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reportedUserId: text("reported_user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    reporterId: text("reporter_id").references(() => appUser.id),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("idx_report_reported_user").on(table.reportedUserId)],
+);
+
+// ---------------------------------------------------------------------------
+// TESTIMONIAL
+// Quotes shown in the landing page's testimonials section. Managed from the
+// admin panel; only published rows are shown publicly.
+// ---------------------------------------------------------------------------
+
+export const testimonial = pgTable("testimonial", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authorName: text("author_name").notNull(),
+  authorRole: text("author_role").notNull(),
+  body: text("body").notNull(),
+  // Short highlighted stat shown above the quote, e.g. metric="₹600",
+  // metricLabel="saved per month".
+  metric: text("metric").notNull(),
+  metricLabel: text("metric_label").notNull(),
+  // Optional photo — falls back to colored initials when absent.
+  avatarUrl: text("avatar_url"),
+  published: boolean("published").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// FEEDBACK
+// Submitted by users to report bugs or request features. Reviewed in admin.
+// ---------------------------------------------------------------------------
+
+export const feedbackType = pgEnum("feedback_type", [
+  "bug",
+  "feature_request",
+  "other",
+]);
+
+export const feedbackStatus = pgEnum("feedback_status", [
+  "open",
+  "in_review",
+  "done",
+  "closed",
+]);
+
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => appUser.id, { onDelete: "cascade" }),
+    type: feedbackType("type").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    status: feedbackStatus("status").notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_feedback_user").on(table.userId),
+    index("idx_feedback_status").on(table.status),
+  ],
 );
 
 // ---------------------------------------------------------------------------
