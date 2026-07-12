@@ -33,7 +33,7 @@ export async function POST(
   const transactionRef = typeof body.transactionRef === "string" ? body.transactionRef.trim() || null : undefined;
   const paidAt         = proofImageUrl ? new Date() : (body.paidAt ? new Date(body.paidAt as string) : undefined);
 
-  const values: Record<string, unknown> = {
+  const values: typeof membershipPayment.$inferInsert = {
     membershipId,
     installmentNumber: slot,
   };
@@ -43,7 +43,7 @@ export async function POST(
 
   const [row] = await db
     .insert(membershipPayment)
-    .values(values as Parameters<typeof db.insert>[0] extends infer T ? T : never)
+    .values(values)
     .onConflictDoUpdate({
       target: [membershipPayment.membershipId, membershipPayment.installmentNumber],
       set: {
