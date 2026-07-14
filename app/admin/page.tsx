@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { appUser, subscription, membership, review, report, testimonial } from "@/db/schema";
-import { eq, inArray, sql, desc } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import AdminClient from "@/components/admin-client";
 
 export const metadata = { title: "Admin Panel · LetsSplit" };
@@ -16,24 +16,16 @@ export default async function AdminPage() {
   if (session.user.role !== "ADMIN") redirect("/home");
 
   const [
-    [{ count: totalUsers }],
-    [{ count: activeListings }],
-    [{ count: completedListings }],
+    [{ count: totalUsers, avg: avgTrustScoreRaw }],
     [{ count: pendingJoinRequests }],
-    [{ avg: avgTrustScoreRaw }],
-    [{ count: totalReviews }],
     users,
     listingCountRows,
     reviewCountRows,
     reportCountRows,
     testimonials,
   ] = await Promise.all([
-    db.select({ count: sql<number>`cast(count(*) as int)` }).from(appUser),
-    db.select({ count: sql<number>`cast(count(*) as int)` }).from(subscription).where(inArray(subscription.status, ACTIVE_STATUSES)),
-    db.select({ count: sql<number>`cast(count(*) as int)` }).from(subscription).where(eq(subscription.status, "completed")),
+    db.select({ count: sql<number>`cast(count(*) as int)`, avg: sql<string | null>`avg(${appUser.trustScore})` }).from(appUser),
     db.select({ count: sql<number>`cast(count(*) as int)` }).from(membership).where(eq(membership.status, "pending")),
-    db.select({ avg: sql<string | null>`avg(${appUser.trustScore})` }).from(appUser),
-    db.select({ count: sql<number>`cast(count(*) as int)` }).from(review),
     db
       .select({
         id:         appUser.id,
@@ -77,6 +69,10 @@ export default async function AdminPage() {
   }
   const reviewsByUser = new Map(reviewCountRows.map(r => [r.revieweeId, r.count]));
   const reportsByUser = new Map(reportCountRows.map(r => [r.reportedUserId, r.count]));
+
+  const activeListings    = [...activeByHost.values()].reduce((a, b) => a + b, 0);
+  const completedListings = [...completedByHost.values()].reduce((a, b) => a + b, 0);
+  const totalReviews      = reviewCountRows.reduce((a, r) => a + r.count, 0);
 
   const userRows = users.map(u => ({
     id:                u.id,

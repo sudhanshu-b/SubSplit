@@ -9,9 +9,14 @@ const globalForDb = globalThis as unknown as { pgClient: postgres.Sql };
 const client =
   globalForDb.pgClient ??
   postgres(process.env.DATABASE_URL!, {
-    max: 5,          // cap connections per serverless instance
+    max: 10,         // cap connections per serverless instance
     idle_timeout: 20, // release idle connections after 20s
     connect_timeout: 10,
+    // DATABASE_URL points at Supabase's transaction-mode pooler (port 6543),
+    // which doesn't support prepared statements — each query can land on a
+    // different backend connection, desyncing any statement prepared on a
+    // prior one. Disabling this is required, not optional, in this mode.
+    prepare: false,
   });
 
 if (process.env.NODE_ENV !== "production") globalForDb.pgClient = client;
