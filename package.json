@@ -11,6 +11,7 @@
     "postinstall": "node scripts/patch-kysely.js"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.10",
     "@radix-ui/react-select": "^2.3.0",
     "@vercel/analytics": "^2.0.1",
     "better-auth": "^1.6.12",

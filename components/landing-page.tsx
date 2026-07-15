@@ -602,8 +602,8 @@ export function LandingNav() {
         className={`flex items-center justify-between w-full max-w-4xl rounded-full px-5 py-2
                     transition-all duration-300 backdrop-blur-xl
                     ${scrolled
-                      ? "bg-white/95 dark:bg-slate-950/95 shadow-lg shadow-black/8 dark:shadow-black/40 border border-gray-200 dark:border-slate-800"
-                      : "bg-gray-50/95 dark:bg-slate-900/95 border border-gray-200 dark:border-slate-800"
+                      ? "bg-white/95 dark:bg-zinc-950/95 shadow-lg shadow-black/8 dark:shadow-black/40 border border-gray-200 dark:border-zinc-800"
+                      : "bg-gray-50/95 dark:bg-zinc-900/95 border border-gray-200 dark:border-zinc-800"
                     }`}
       >
         {/* Logo — switches between light/dark variants based on theme */}
@@ -621,7 +621,7 @@ export function LandingNav() {
               key={label}
               href={href}
               className="text-sm font-semibold text-gray-600 hover:text-gray-900
-                         dark:text-slate-400 dark:hover:text-white transition-colors"
+                         dark:text-zinc-400 dark:hover:text-white transition-colors"
             >
               {label}
             </Link>
@@ -637,7 +637,7 @@ export function LandingNav() {
                 href="/home"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold
                            bg-gray-900 dark:bg-white text-white dark:text-gray-900
-                           hover:bg-gray-700 dark:hover:bg-slate-100 transition-colors"
+                           hover:bg-gray-700 dark:hover:bg-zinc-100 transition-colors"
               >
                 Go to app
                 <motion.span
@@ -654,7 +654,7 @@ export function LandingNav() {
               <Link
                 href="/sign-in"
                 className="text-sm font-semibold text-gray-600 hover:text-gray-900
-                           dark:text-slate-400 dark:hover:text-white transition-colors px-2 hidden sm:block"
+                           dark:text-zinc-400 dark:hover:text-white transition-colors px-2 hidden sm:block"
               >
                 Log in
               </Link>
@@ -662,7 +662,7 @@ export function LandingNav() {
                 <Link
                   href="/sign-up"
                   className="px-4 py-2 rounded-full text-sm font-bold bg-gray-900 dark:bg-white
-                             text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-slate-100
+                             text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-zinc-100
                              transition-colors"
                 >
                   Join for free
