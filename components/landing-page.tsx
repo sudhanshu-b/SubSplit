@@ -8,6 +8,7 @@ import {
   useScroll,
   useTransform,
   useMotionValueEvent,
+  useSpring,
 } from "framer-motion";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
@@ -785,6 +786,20 @@ function SocialProofSection() {
  * while scrollYProgress drives which feature (0/1/2) is displayed.
  * Tab bar + content + mockup all swap with AnimatePresence.
  */
+function FeaturesEyebrow() {
+  return (
+    <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-500 uppercase tracking-widest">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M4 1H1v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      Features
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M6 1h3v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+  );
+}
+
 function FeaturesSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -794,17 +809,48 @@ function FeaturesSection() {
     offset: ["start start", "end end"],
   });
 
-  // Map 0→1 scroll to 0→(N−ε) so Math.floor gives indices 0, 1, 2
-  const rawIndex = useTransform(scrollYProgress, [0, 1], [0, FEATURES.length - 0.001]);
+  // Smooth out the raw scroll signal so the crossfade below tracks the
+  // gesture fluidly instead of jittering on fast/short scroll ticks.
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 260, damping: 38, mass: 0.4 });
+
+  // Map 0→1 scroll to 0→(N−ε) so Math.floor gives indices 0, 1, 2 (drives
+  // the tab bar + dot indicators only — the content crossfade below is
+  // driven directly and continuously by smoothProgress, not this index).
+  const rawIndex = useTransform(smoothProgress, [0, 1], [0, FEATURES.length - 0.001]);
   useMotionValueEvent(rawIndex, "change", (v) =>
     setActiveIdx(Math.max(0, Math.min(FEATURES.length - 1, Math.floor(v)))),
   );
+
+  // Continuous cross-fade windows centered on each 1/3 scroll boundary, so
+  // adjacent features dissolve into each other in lockstep with the scroll
+  // position instead of snapping on a fixed-duration timer.
+  const b1 = 1 / 3, b2 = 2 / 3, w = 0.08;
+  const opacities = [
+    useTransform(smoothProgress, [0, b1 - w, b1 + w], [1, 1, 0]),
+    useTransform(smoothProgress, [b1 - w, b1 + w, b2 - w, b2 + w], [0, 1, 1, 0]),
+    useTransform(smoothProgress, [b2 - w, b2 + w, 1], [0, 1, 1]),
+  ];
+  const ys = [
+    useTransform(smoothProgress, [0, b1 - w, b1 + w], [0, 0, -16]),
+    useTransform(smoothProgress, [b1 - w, b1 + w, b2 - w, b2 + w], [16, 0, 0, -16]),
+    useTransform(smoothProgress, [b2 - w, b2 + w, 1], [16, 0, 0]),
+  ];
+
+  function jumpTo(i: number) {
+    const el = containerRef.current;
+    if (!el) return;
+    const top = el.offsetTop + (el.offsetHeight * (i + 0.5)) / FEATURES.length;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
 
   return (
     <>
 
       {/* ── Mobile: stacked feature cards (no sticky scroll) ── */}
       <div className="md:hidden px-4 py-16 bg-white dark:bg-slate-950 space-y-20">
+        <div className="text-center mb-2">
+          <FeaturesEyebrow />
+        </div>
         {FEATURES.map((f, i) => (
           <motion.div
             key={i}
@@ -839,65 +885,76 @@ function FeaturesSection() {
         className="relative hidden md:block"
       >
         <div className="sticky top-0 h-screen flex flex-col items-center justify-center
-                        px-4 bg-white mb-3 dark:bg-slate-950 overflow-hidden">
+                        px-4 py-6 bg-white dark:bg-slate-950 overflow-hidden">
 
-          {/* Tab bar */}
-          {/* <motion.div
-            className="flex items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded-full p-1 mb-14"
-            initial={{ opacity: 0, y: -12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease: EASE }}
-          >
+          <div className="mb-3 shrink-0">
+            <FeaturesEyebrow />
+          </div>
+
+          {/* Tab bar — click to jump, active pill tracks scroll position */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-900 rounded-full p-1 mb-6 shrink-0">
             {FEATURES.map((f, i) => (
-              <div
+              <button
                 key={i}
-                className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 select-none ${
+                onClick={() => jumpTo(i)}
+                className={`relative px-5 py-2 rounded-full text-sm font-bold transition-colors duration-300 select-none cursor-pointer ${
                   activeIdx === i
-                    ? "bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-400 dark:text-slate-500"
+                    ? "text-gray-900 dark:text-white"
+                    : "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
                 }`}
               >
-                {f.tab}
-              </div>
+                {activeIdx === i && (
+                  <motion.span
+                    layoutId="features-tab-pill"
+                    className="absolute inset-0 bg-white dark:bg-slate-800 rounded-full shadow-sm"
+                    transition={{ type: "spring", stiffness: 420, damping: 38 }}
+                  />
+                )}
+                <span className="relative">{f.tab}</span>
+              </button>
             ))}
-          </motion.div> */}
+          </div>
 
-          {/* Headline + body text */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`text-${activeIdx}`}
-              className="text-center max-w-2xl mb-12"
-              initial={{ opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0  }}
-              exit={{   opacity: 0, y: -20 }}
-              transition={{ duration: 0.45, ease: EASE }}
-            >
-              <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-none
-                             text-gray-900 dark:text-white mb-6 whitespace-pre-line">
-                {FEATURES[activeIdx].headline}
-              </h2>
-              <p className="text-lg text-gray-500 dark:text-slate-400 font-medium leading-relaxed">
-                {FEATURES[activeIdx].body}
-              </p>
-            </motion.div>
-          </AnimatePresence>
+          {/* Cross-fading content — all three stacked, opacity/position driven
+              continuously by scroll so the transition feels glued to the gesture */}
+          <div className="relative w-full max-w-2xl flex-1 min-h-0">
+            {FEATURES.map((f, i) => (
+              <motion.div
+                key={i}
+                style={{ opacity: opacities[i], y: ys[i] }}
+                className={`absolute inset-0 flex flex-col items-center text-center overflow-hidden ${
+                  i === activeIdx ? "" : "pointer-events-none"
+                }`}
+              >
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight
+                               text-gray-900 dark:text-white mb-2.5 whitespace-pre-line shrink-0">
+                  {f.headline}
+                </h2>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-slate-400 font-medium leading-relaxed mb-5 max-w-md shrink-0">
+                  {f.body}
+                </p>
+                <div className="w-full min-h-0 scale-[0.85] sm:scale-90 lg:scale-100 origin-top">
+                  {i === 0 && <BrowseMockup />}
+                  {i === 1 && <ListingDetailMockup />}
+                  {i === 2 && <MessagesMockup />}
+                </div>
+              </motion.div>
+            ))}
+          </div>
 
-          {/* UI mockup */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`mockup-${activeIdx}`}
-              className="w-full max-w-2xl"
-              initial={{ opacity: 0, scale: 0.93, y: 24  }}
-              animate={{ opacity: 1, scale: 1,    y: 0   }}
-              exit={{   opacity: 0, scale: 0.97,  y: -12 }}
-              transition={{ duration: 0.5, ease: EASE }}
-            >
-              {activeIdx === 0 && <BrowseMockup />}
-              {activeIdx === 1 && <ListingDetailMockup />}
-              {activeIdx === 2 && <MessagesMockup />}
-            </motion.div>
-          </AnimatePresence>
+          {/* Dot indicators */}
+          <div className="flex justify-center items-center gap-1.5 mt-3 shrink-0">
+            {FEATURES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => jumpTo(i)}
+                aria-label={`Jump to ${FEATURES[i].tab}`}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === activeIdx ? "w-6 bg-emerald-500" : "w-1.5 bg-gray-300 dark:bg-slate-700"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </>
@@ -905,63 +962,73 @@ function FeaturesSection() {
 }
 
 /** ⑦ How it works — 3-column feature cards */
-// function HowItWorksSection() {
-//   const steps = [
-//     {
-//       icon: "🔍",
-//       title: "Discover a plan",
-//       body:  "Browse hundreds of verified listings. Filter by service, price, or available slots.",
-//     },
-//     {
-//       icon: "🤝",
-//       title: "Request to join",
-//       body:  "Send a request with one tap. Chat with the host and confirm every detail.",
-//     },
-//     {
-//       icon: "💸",
-//       title: "Split and save",
-//       body:  "Pay your share every month. Track savings and manage memberships in one place.",
-//     },
-//   ];
+const HOW_IT_WORKS_STEPS = [
+  {
+    title: "List it, or find it.",
+    body:  "Host a plan for a subscription you already pay for, or browse open listings filtered by service, price, and available seats.",
+  },
+  {
+    title: "Request, then get approved.",
+    body:  "Send a join request with one tap. Hosts review and approve who joins — no surprise members, no bots.",
+  },
+  {
+    title: "Pay your share, together.",
+    body:  "Confirm UPI details in the group chat and track who's paid, right on the listing — no spreadsheets, no chasing.",
+  },
+  {
+    title: "Trust builds with every plan.",
+    body:  "Completed plans and reviews shape your trust score, so hosts and members can vet each other before joining.",
+  },
+];
 
-//   return (
-//     <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
-//       <motion.h2
-//         className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-none text-center
-//                    text-gray-900 dark:text-white mb-10 md:mb-16"
-//         initial={{ opacity: 0, y: 30 }}
-//         whileInView={{ opacity: 1, y: 0 }}
-//         viewport={{ once: true, margin: "-60px" }}
-//         transition={{ duration: 0.6, ease: EASE }}
-//       >
-//         From inspiration to creation.
-//       </motion.h2>
+/** ⑦ How it works — plain numbered steps, one after another */
+function HowItWorksSection() {
+  return (
+    <section className="py-16 md:py-28 px-4 bg-white dark:bg-slate-950">
+      <div className="text-center mb-4">
+        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-500 uppercase tracking-widest mb-5">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M4 1H1v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          How it works
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M6 1h3v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
+          From browsing to sharing.
+        </h2>
+      </div>
 
-//       <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
-//         {steps.map((step, i) => (
-//           <motion.div
-//             key={i}
-//             className="bg-gray-50 dark:bg-slate-900 rounded-2xl p-7 border border-gray-100
-//                        dark:border-slate-800 flex flex-col gap-4"
-//             initial={{ opacity: 0, y: 40 }}
-//             whileInView={{ opacity: 1, y: 0 }}
-//             viewport={{ once: true, margin: "-40px" }}
-//             transition={{ delay: i * 0.1, duration: 0.55, ease: EASE }}
-//             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-//           >
-//             <span className="text-3xl">{step.icon}</span>
-//             <h3 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
-//               {step.title}
-//             </h3>
-//             <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-//               {step.body}
-//             </p>
-//           </motion.div>
-//         ))}
-//       </div>
-//     </section>
-//   );
-// }
+      <div className="max-w-xl mx-auto">
+        {HOW_IT_WORKS_STEPS.map((step, i) => (
+          <motion.div
+            key={i}
+            className={`text-center py-10 md:py-12 ${
+              i > 0 ? "border-t border-gray-100 dark:border-slate-800" : ""
+            }`}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: EASE }}
+          >
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2
+                             border-gray-200 dark:border-slate-700 text-sm font-bold
+                             text-gray-500 dark:text-slate-400 mb-5">
+              {i + 1}
+            </span>
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-white mb-3">
+              {step.title}
+            </h3>
+            <p className="text-gray-500 dark:text-slate-400 leading-relaxed max-w-sm mx-auto">
+              {step.body}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function initialsOf(name: string) {
   return name.split(/\s+/).map(p => p[0]).join("").slice(0, 2).toUpperCase();
@@ -1413,7 +1480,7 @@ export default function LandingPage({ testimonials }: { testimonials?: LandingTe
       <HeroSection />
       <SocialProofSection />
       <FeaturesSection />
-      {/* <HowItWorksSection /> */}
+      <HowItWorksSection />
       <TestimonialsSection testimonials={testimonials?.length ? testimonials : FALLBACK_TESTIMONIALS} />
       <CTASection />
       <Footer />
