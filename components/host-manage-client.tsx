@@ -1040,10 +1040,10 @@ export default function HostManageClient({
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 -mt-5">
 
       {/* ── Sticky header ─────────────────────────────────────────────────── */}
-      <div className="sticky top-20 z-30
+      <div className="sticky top-15 z-30
                       bg-zinc-50/90 dark:bg-zinc-950/90 backdrop-blur-md
                       border-b border-zinc-200 dark:border-zinc-800/50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

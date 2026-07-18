@@ -20,7 +20,7 @@ const SERVICES = [
   { name: "Netflix",    bg: "#E50914", icon: "https://cdn.simpleicons.org/netflix/ffffff",        filter: undefined },
   { name: "ChatGPT",    bg: "#10a37f", icon: "/ChatGPT-Logo.png",                                filter: "brightness(0) invert(1)" },
   { name: "Spotify",    bg: "#1DB954", icon: "https://cdn.simpleicons.org/spotify/ffffff",        filter: undefined },
-  { name: "Claude",     bg: "#D97757", icon: "/claude.png",                                       filter: undefined },
+  { name: "Claude",     bg: "#ffffff", icon: "/claude.png",                                       filter: undefined },
   { name: "YouTube",    bg: "#FF0000", icon: "https://cdn.simpleicons.org/youtube/ffffff",        filter: undefined },
   { name: "Gemini",     bg: "#ffffff", icon: "/Gemini-logo.png",                                  filter: undefined },
   { name: "iCloud+",    bg: "#3693F3", icon: "https://cdn.simpleicons.org/icloud/ffffff",         filter: undefined },
@@ -122,7 +122,7 @@ const MARQUEE_ITEMS = [
   { name: "iCloud+",              icon: "https://cdn.simpleicons.org/icloud/3693F3"         },
   { name: "Perplexity",           icon: "https://cdn.simpleicons.org/perplexity/1FB8CD"     },
   { name: "ChatGPT",              icon: "/ChatGPT-Logo.png"  },
-  { name: "Claude",               icon: "/claude.png"        },
+  { name: "Claude",               icon: "https://thesvg.org/icons/claude/default.svg"        },
   { name: "Gemini",               icon: "/Gemini-logo.png"   },
   { name: "Apple TV+",            icon: "https://cdn.simpleicons.org/appletv/374151"        },
   { name: "1Password",            icon: "https://cdn.simpleicons.org/1password/0094F5"      },
@@ -616,7 +616,7 @@ export function LandingNav() {
 
         {/* Centre nav links */}
         <div className="hidden md:flex items-center gap-6">
-          {([["Pricing", "/pricing"], ["Browse", "/browse"], ["About", "/about"], ["FAQ", "/faq"]] as [string, string][]).map(([label, href]) => (
+          {([["Browse", "/browse"], ["About", "/about"], ["FAQ", "/faq"]] as [string, string][]).map(([label, href]) => (
             <Link
               key={label}
               href={href}
@@ -976,6 +976,10 @@ const HOW_IT_WORKS_STEPS = [
     body:  "Confirm UPI details in the group chat and track who's paid, right on the listing — no spreadsheets, no chasing.",
   },
   {
+    title: "Get access, arranged directly.",
+    body:  "Access is shared directly by the host through the service's normal sharing features or a shared sign-in, and SubSplit never sees, stores, or brokers login credentials.",
+  },
+  {
     title: "Trust builds with every plan.",
     body:  "Completed plans and reviews shape your trust score, so hosts and members can vet each other before joining.",
   },
@@ -1012,8 +1016,8 @@ function HowItWorksSection() {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.55, ease: EASE }}
           >
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2
-                             border-gray-200 dark:border-slate-700 text-sm font-bold
+            <span className="inline-flex items-center justify-center min-w-11 px-3 py-1 rounded-full border
+                             border-gray-200 dark:border-slate-700 text-sm font-semibold
                              text-gray-500 dark:text-slate-400 mb-5">
               {i + 1}
             </span>

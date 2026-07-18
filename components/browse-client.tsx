@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import BrowseCard, { BrowseCardSkeleton, type BrowseListing } from "@/components/browse-card";
 
@@ -125,9 +126,29 @@ export default function BrowseClient({ initialListings, initialHasMore, query }:
             </p>
             <p className="text-sm text-zinc-400 dark:text-zinc-500 max-w-xs">
               {query
-                ? "Try a different search term, or browse all listings."
+                ? `No one's listed "${query}" yet — be the first to share it and let others join.`
                 : "Be the first to host a shared subscription plan."}
             </p>
+
+            {query && (
+              <div className="flex items-center gap-3 mt-5">
+                <Link
+                  href="/listings/new"
+                  className="px-4 py-2 rounded-full text-sm font-semibold
+                             bg-zinc-900 dark:bg-white text-white dark:text-zinc-900
+                             hover:bg-zinc-700 dark:hover:bg-zinc-100 transition-colors"
+                >
+                  List a plan
+                </Link>
+                <Link
+                  href="/browse"
+                  className="text-sm font-semibold text-zinc-500 dark:text-zinc-400
+                             hover:text-zinc-900 dark:hover:text-white transition-colors"
+                >
+                  Browse all listings
+                </Link>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

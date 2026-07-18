@@ -6,28 +6,28 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// ── Service color map ──────────────────────────────────────────────────────
-const SERVICE_COLOR: Record<string, string> = {
-  netflix:                "#E50914",
-  spotify:                "#1DB954",
-  "youtube premium":      "#FF0000",
-  youtube:                "#FF0000",
-  "icloud+":              "#3693F3",
-  icloud:                 "#3693F3",
-  notion:                 "#191919",
-  "github copilot":       "#6941C6",
-  github:                 "#24292E",
-  perplexity:             "#1FB8CD",
-  canva:                  "#00C4CC",
-  "adobe creative cloud": "#FF0000",
-  dropbox:                "#0061FF",
-  duolingo:               "#58CC02",
-  "1password":            "#0094F5",
-  "apple tv+":            "#555555",
+// ── Service → logo/colour map ──────────────────────────────────────────────
+const SERVICE_META: Record<string, { bg: string; slug: string }> = {
+  netflix:                { bg: "#E50914", slug: "netflix"       },
+  spotify:                { bg: "#1DB954", slug: "spotify"       },
+  "youtube premium":      { bg: "#FF0000", slug: "youtube"       },
+  youtube:                { bg: "#FF0000", slug: "youtube"       },
+  "icloud+":              { bg: "#3693F3", slug: "icloud"        },
+  icloud:                 { bg: "#3693F3", slug: "icloud"        },
+  notion:                 { bg: "#191919", slug: "notion"        },
+  "github copilot":       { bg: "#6941C6", slug: "githubcopilot" },
+  github:                 { bg: "#24292E", slug: "github"        },
+  perplexity:             { bg: "#1FB8CD", slug: "perplexity"    },
+  canva:                  { bg: "#00C4CC", slug: "canva"         },
+  "adobe creative cloud": { bg: "#FF0000", slug: "adobe"         },
+  dropbox:                { bg: "#0061FF", slug: "dropbox"       },
+  duolingo:               { bg: "#58CC02", slug: "duolingo"      },
+  "1password":            { bg: "#0094F5", slug: "1password"     },
+  "apple tv+":            { bg: "#555555", slug: "appletv"       },
 };
 
-function serviceColor(name: string) {
-  return SERVICE_COLOR[name.toLowerCase()] ?? "#6366f1";
+function serviceMeta(name: string) {
+  return SERVICE_META[name.toLowerCase()] ?? { bg: "#6366f1", slug: "" };
 }
 
 // ── Status config ──────────────────────────────────────────────────────────
@@ -88,6 +88,25 @@ function Dot({ color, pulse = false, size = 8 }: { color: string; pulse?: boolea
       className={`rounded-full flex-shrink-0 inline-block ${pulse ? "animate-pulse" : ""}`}
       style={{ width: size, height: size, backgroundColor: color }}
     />
+  );
+}
+
+// ── ServiceLogo ────────────────────────────────────────────────────────────
+function ServiceLogo({ name, size = 32 }: { name: string; size?: number }) {
+  const { bg, slug } = serviceMeta(name);
+  const iconUrl = slug ? `https://cdn.simpleicons.org/${slug}/ffffff` : null;
+  return (
+    <div
+      className="rounded-[9px] flex items-center justify-center shrink-0"
+      style={{ width: size, height: size, backgroundColor: bg }}
+    >
+      {iconUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={iconUrl} alt={name} className="object-contain" style={{ width: size * 0.55, height: size * 0.55 }} />
+      ) : (
+        <span className="text-white font-bold" style={{ fontSize: size * 0.4 }}>{name[0]}</span>
+      )}
+    </div>
   );
 }
 
@@ -169,7 +188,6 @@ function QuickLinks() {
 
 // ── Hosted plan row ────────────────────────────────────────────────────────
 function HostedRow({ plan, delay }: { plan: HostedPlan; delay: number }) {
-  const color  = serviceColor(plan.serviceName);
   const price  = formatPrice(plan.pricePerSeat);
   const status = STATUS[plan.status] ?? STATUS.draft;
 
@@ -181,9 +199,9 @@ function HostedRow({ plan, delay }: { plan: HostedPlan; delay: number }) {
       className="group py-4 border-b border-zinc-100 dark:border-zinc-800/70 last:border-0"
     >
       <div className="flex items-start justify-between gap-4">
-        {/* Left: dot + content */}
+        {/* Left: logo + content */}
         <div className="flex items-start gap-3 min-w-0">
-          <Dot color={color} size={10} pulse={plan.status === "active"} />
+          <ServiceLogo name={plan.serviceName} size={32} />
 
           <div className="min-w-0">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-snug truncate">
@@ -233,7 +251,6 @@ function HostedRow({ plan, delay }: { plan: HostedPlan; delay: number }) {
 
 // ── Joined plan row ────────────────────────────────────────────────────────
 function JoinedRow({ plan, delay }: { plan: JoinedPlan; delay: number }) {
-  const color    = serviceColor(plan.serviceName);
   const price    = formatPrice(plan.pricePerSeat);
   const inactive = ["left", "removed", "rejected"].includes(plan.membershipStatus);
 
@@ -247,7 +264,7 @@ function JoinedRow({ plan, delay }: { plan: JoinedPlan; delay: number }) {
       <Link href={`/listings/${plan.subscriptionId}/member`} className="flex items-start justify-between gap-4">
         {/* Left */}
         <div className="flex items-start gap-3 min-w-0">
-          <Dot color={color} size={10} />
+          <ServiceLogo name={plan.serviceName} size={32} />
 
           <div className="min-w-0">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-snug truncate">

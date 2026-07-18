@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Spinner from "@/components/spinner";
@@ -136,6 +136,9 @@ function Step1({
     ...services,
     { id: "__custom__", name: "Other", category: null } as DbService,
   ];
+  
+  const autoTitleRef = useRef("");
+  const titleIsAuto = form.title === "" || form.title === autoTitleRef.current;
 
   return (
     <div>
@@ -158,7 +161,15 @@ function Step1({
             <button
               key={svc.id}
               type="button"
-              onClick={() => onChange({ serviceId: svc.id })}
+              onClick={() => {
+                const next: Partial<FormData> = { serviceId: svc.id };
+                if (!isOther && titleIsAuto) {
+                  const t = `${svc.name} Plan`;
+                  next.title = t;
+                  autoTitleRef.current = t;
+                }
+                onChange(next);
+              }}
               className={`relative flex items-center gap-2.5 rounded-xl px-3 py-2.5
                          transition-all duration-150 text-left
                          ${isSelected
@@ -233,7 +244,16 @@ function Step1({
                 autoFocus
                 type="text"
                 value={form.customServiceName}
-                onChange={(e) => onChange({ customServiceName: e.target.value })}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  const next: Partial<FormData> = { customServiceName: name };
+                  if (titleIsAuto) {
+                    const t = name ? `${name} Plan` : "";
+                    next.title = t;
+                    autoTitleRef.current = t;
+                  }
+                  onChange(next);
+                }}
                 placeholder="Service name — e.g. Cursor, Linear, Figma…"
               />
               <div className="grid grid-cols-2 gap-2">
