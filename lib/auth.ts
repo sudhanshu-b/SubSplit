@@ -83,19 +83,6 @@ export const auth = betterAuth({
         console.error("[mail] verification FAILED for", user.email, err);
       }
     },
-    afterVerification: async ({ user }: { user: { email: string; name: string } }) => {
-      try {
-        await sendMail({
-          to:      user.email,
-          subject: "Welcome to LetsSplit",
-          from:    "LetsSplit <hello@letssplit.in>",
-          html:    welcomeEmailHtml(user.name),
-        });
-        console.log("[mail] welcome sent to", user.email);
-      } catch (err) {
-        console.error("[mail] welcome FAILED for", user.email, err);
-      }
-    },
   },
 
   user: {
@@ -115,6 +102,28 @@ export const auth = betterAuth({
       update: {
         before: async (user) => {
           assertValidAvatar(user.image);
+        },
+        after: async (user) => {
+          if (user.emailVerified === true) {
+            const [fullUser] = await db
+              .select({ email: appUser.email, name: appUser.name })
+              .from(appUser)
+              .where(eq(appUser.id, user.id as string))
+              .limit(1);
+            if (fullUser) {
+              try {
+                await sendMail({
+                  to:      fullUser.email,
+                  subject: "Welcome to LetsSplit",
+                  from:    "LetsSplit <hello@letssplit.in>",
+                  html:    welcomeEmailHtml(fullUser.name),
+                });
+                console.log("[mail] welcome sent to", fullUser.email);
+              } catch (err) {
+                console.error("[mail] welcome FAILED for", fullUser.email, err);
+              }
+            }
+          }
         },
       },
     },

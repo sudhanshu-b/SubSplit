@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { testimonial } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 // PATCH — toggle whether a testimonial is published on the landing page. Admin-only.
 export async function PATCH(
@@ -28,6 +29,7 @@ export async function PATCH(
     .set({ published: nextPublished, updatedAt: new Date() })
     .where(eq(testimonial.id, id));
 
+  revalidatePath("/");
   return Response.json({ published: nextPublished });
 }
 
@@ -43,5 +45,6 @@ export async function DELETE(
   const { id } = await params;
   await db.delete(testimonial).where(eq(testimonial.id, id));
 
+  revalidatePath("/");
   return Response.json({ success: true });
 }

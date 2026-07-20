@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { testimonial } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 // GET — list all testimonials (published and unpublished). Admin-only.
 export async function GET(request: Request) {
@@ -36,5 +37,6 @@ export async function POST(request: Request) {
     .values({ authorName, authorRole, body: text, metric, metricLabel, avatarUrl })
     .returning();
 
+  revalidatePath("/");
   return Response.json({ testimonial: created }, { status: 201 });
 }

@@ -23,7 +23,7 @@ const CURRENCY    = { code: "INR", symbol: "₹" };
 const SERVICE_CATEGORIES = [
   "Entertainment","Music & Audio","Cloud Storage","Productivity",
   "Gaming","Education","Security & Privacy","Design",
-  "News & Media","Health & Fitness","VPN","Other",
+  "Development","News & Media","Health & Fitness","VPN","Other",
 ] as const;
 
 // ── Service → icon / brand colour ─────────────────────────────────────────

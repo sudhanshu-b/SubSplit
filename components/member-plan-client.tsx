@@ -675,29 +675,46 @@ export default function MemberPlanClient({
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Status",     value: statusCfg.label,  cls: statusCfg.text },
-          { label: "Host",       value: listing.hostName, cls: "text-zinc-900 dark:text-zinc-100" },
-          { label: "Seat Price", value: price ? `${sym}${price}` : "—", cls: "text-zinc-900 dark:text-zinc-100" },
-          {
-            label: "Ends",
-            value: listing.activeTill
-              ? fmtShort(listing.activeTill)
-              : (durationLabel(listing.durationDays) ?? "—"),
-            cls: "text-zinc-900 dark:text-zinc-100",
-          },
-        ].map(s => (
-          <div key={s.label}
-               className="rounded-2xl px-4 py-4
-                          bg-[#ffffff] dark:bg-zinc-900
-                          border border-zinc-200 dark:border-zinc-800/80">
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5
-                          text-zinc-500 dark:text-zinc-600">
-              {s.label}
-            </p>
-            <p className={`text-sm font-bold leading-snug ${s.cls}`}>{s.value}</p>
+        {/* Status */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: statusCfg.dotBg }} />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Status</p>
           </div>
-        ))}
+          <p className={`text-sm font-bold leading-snug ${statusCfg.text}`}>{statusCfg.label}</p>
+        </div>
+        {/* Host */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Host</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100 truncate">{listing.hostName}</p>
+        </div>
+        {/* Price */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185Z" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Seat Price</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100">{price ? `${sym}${price}` : "—"}</p>
+        </div>
+        {/* Ends */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Ends</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100">
+            {listing.activeTill ? fmtShort(listing.activeTill) : (durationLabel(listing.durationDays) ?? "—")}
+          </p>
+        </div>
       </div>
 
       {/* Plan Details card */}
@@ -749,10 +766,10 @@ export default function MemberPlanClient({
 
       {/* Danger zone — only while still recruitable */}
       {["recruiting", "ready_to_purchase"].includes(listing.status) && (
-        <div className="rounded-2xl bg-[#ffffff] dark:bg-zinc-900
-                        border border-zinc-200 dark:border-zinc-800/80 overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800/60">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">
+        <div className="rounded-2xl bg-white dark:bg-zinc-900
+                        border border-red-200 dark:border-red-500/20 overflow-hidden">
+          <div className="px-5 py-4 border-b border-red-100 dark:border-red-500/10">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 dark:text-red-500">
               Danger Zone
             </p>
           </div>
@@ -765,13 +782,16 @@ export default function MemberPlanClient({
             </div>
             <button
               onClick={() => setConfirmLeave(true)}
-              className="shrink-0 text-sm font-semibold px-4 py-2 rounded-xl
+              className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl
                          text-red-600 dark:text-red-400
                          bg-red-50 dark:bg-red-400/10
                          border border-red-200 dark:border-red-400/20
                          hover:bg-red-100 dark:hover:bg-red-400/20
                          transition-colors"
             >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+              </svg>
               Leave Plan
             </button>
           </div>
@@ -797,44 +817,58 @@ export default function MemberPlanClient({
   );
 
   const membersContent = (
-    <div className="rounded-2xl bg-[#ffffff] dark:bg-zinc-900
+    <div className="rounded-2xl bg-white dark:bg-zinc-900
                     border border-zinc-200 dark:border-zinc-800/80 overflow-hidden">
-      <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800/60">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">
-          Group Members
-        </p>
+      <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+          </svg>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">
+            Group Members
+          </p>
+        </div>
+        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5">
+          {members.length}
+        </span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800/40">
         {members.map((m, i) => (
           <div key={i} className="flex items-center gap-3 px-5 py-3.5">
             {m.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={m.image} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+              <img src={m.image} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-zinc-200 dark:ring-zinc-700" />
             ) : (
               <div
                 className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center
-                           text-white text-xs font-bold"
+                           text-white text-xs font-bold ring-1 ring-white/20"
                 style={{ backgroundColor: avatarColor(m.name) }}
               >
                 {m.name[0].toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                {m.name}
-              </span>
-              {m.isYou && (
-                <span className="ml-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
-                  (You)
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                  {m.name}
                 </span>
-              )}
+                {m.isYou && (
+                  <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full
+                                   bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500">
+                    You
+                  </span>
+                )}
+              </div>
             </div>
             {m.isHost && (
-              <span className="text-[10px] font-bold uppercase tracking-wider shrink-0
-                               text-zinc-600 dark:text-zinc-400
-                               bg-zinc-100 dark:bg-zinc-800
-                               border border-zinc-200 dark:border-zinc-700
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold shrink-0
+                               text-amber-700 dark:text-amber-400
+                               bg-amber-50 dark:bg-amber-400/10
+                               border border-amber-200 dark:border-amber-400/20
                                rounded-full px-2 py-0.5">
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
                 Host
               </span>
             )}

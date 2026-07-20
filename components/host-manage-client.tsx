@@ -309,7 +309,7 @@ function PaymentDetailsModal({
                       </p>
                     )}
                   </div>
-                  {p.proofImageUrl && (
+                  {p.proofImageUrl && p.paidAt && (
                     <button
                       onClick={() => onViewProof(p.proofImageUrl!)}
                       title="View proof"
@@ -484,29 +484,48 @@ export default function HostManageClient({
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Status",   value: statusCfg.label, cls: statusCfg.textColor },
-          { label: "Members",  value: `${activeCount} / ${listing.totalSeats}`, cls: "text-zinc-900 dark:text-zinc-100" },
-          { label: "Price",    value: price ? `${sym}${price} / seat` : "—", cls: "text-zinc-900 dark:text-zinc-100" },
-          {
-            label: "Duration",
-            value: listing.activeFrom && listing.activeTill
-              ? `${formatDate(listing.activeFrom)} – ${formatDate(listing.activeTill)}`
-              : (durationLabel(listing.durationDays) ?? "—"),
-            cls: "text-zinc-900 dark:text-zinc-100",
-          },
-        ].map(s => (
-          <div key={s.label}
-               className="rounded-2xl px-4 py-4
-                          bg-[#ffffff] dark:bg-zinc-900
-                          border border-zinc-200 dark:border-zinc-800/80">
-            <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5
-                          text-zinc-500 dark:text-zinc-600">
-              {s.label}
-            </p>
-            <p className={`text-sm font-bold leading-snug ${s.cls}`}>{s.value}</p>
+        {/* Status */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Dot bg={statusCfg.dotBg} pulse={statusCfg.pulse} />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Status</p>
           </div>
-        ))}
+          <p className={`text-sm font-bold leading-snug ${statusCfg.textColor}`}>{statusCfg.label}</p>
+        </div>
+        {/* Members */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Members</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100">{activeCount} / {listing.totalSeats}</p>
+        </div>
+        {/* Price */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185Z" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Price</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100">{price ? `${sym}${price} / seat` : "—"}</p>
+        </div>
+        {/* Duration */}
+        <div className="rounded-2xl px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80">
+          <div className="flex items-center gap-1.5 mb-2">
+            <svg className="w-3 h-3 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Duration</p>
+          </div>
+          <p className="text-sm font-bold leading-snug text-zinc-900 dark:text-zinc-100">
+            {listing.activeFrom && listing.activeTill
+              ? `${formatDate(listing.activeFrom)} – ${formatDate(listing.activeTill)}`
+              : (durationLabel(listing.durationDays) ?? "—")}
+          </p>
+        </div>
       </div>
 
       {/* Description */}
@@ -675,8 +694,13 @@ export default function HostManageClient({
       </div>
 
       {members.length === 0 ? (
-        <div className="px-5 py-16 text-center">
-          <p className="text-sm text-zinc-400 dark:text-zinc-700">No members yet.</p>
+        <div className="px-5 py-16 text-center flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+            <svg className="w-5 h-5 text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            </svg>
+          </div>
+          <p className="text-sm text-zinc-400 dark:text-zinc-600">No members yet. Share your listing to get started.</p>
         </div>
       ) : (
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800/40">
@@ -703,23 +727,33 @@ export default function HostManageClient({
                 <button
                   onClick={() => handleMember(m.membershipId, m.memberId, "approve")}
                   disabled={loadingKey === `approve-${m.membershipId}`}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50
                              text-green-700 dark:text-green-400
                              bg-green-50 dark:bg-green-400/10
                              border border-green-200 dark:border-green-400/20
                              hover:bg-green-100 dark:hover:bg-green-400/20"
                 >
+                  {loadingKey === `approve-${m.membershipId}` ? (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                  )}
                   {loadingKey === `approve-${m.membershipId}` ? "…" : "Approve"}
                 </button>
                 <button
                   onClick={() => handleMember(m.membershipId, m.memberId, "reject")}
                   disabled={loadingKey === `reject-${m.membershipId}`}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all disabled:opacity-50
                              text-zinc-600 dark:text-zinc-400
                              bg-zinc-100 dark:bg-zinc-800
                              border border-zinc-200 dark:border-zinc-700
                              hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 >
+                  {loadingKey === `reject-${m.membershipId}` ? (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                  )}
                   {loadingKey === `reject-${m.membershipId}` ? "…" : "Decline"}
                 </button>
               </div>
@@ -753,11 +787,16 @@ export default function HostManageClient({
                 <div className="flex items-center gap-1.5 shrink-0">
 
                   {/* Paid / Pending badge */}
-                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg ${
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg ${
                     paid
                       ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-400/10 border border-green-200 dark:border-green-400/20"
                       : "text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 border border-amber-200 dark:border-amber-400/20"
                   }`}>
+                    {paid ? (
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                    ) : (
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    )}
                     {paid ? "Paid" : "Pending"}
                   </span>
 

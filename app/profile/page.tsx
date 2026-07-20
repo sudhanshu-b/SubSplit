@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import ResendVerification from "@/components/resend-verification";
 import AvatarUpload from "@/components/avatar-upload";
+import PhoneEditor from "@/components/phone-editor";
 
 export const metadata = { title: "Profile · LetsSplit" };
 
@@ -115,17 +116,20 @@ export default async function ProfilePage() {
               : <span className="text-sm text-zinc-400 dark:text-zinc-600">Not added</span>
           }
           aside={
-            user.phone
-              ? user.isPhoneVerified
-                ? <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
-                    <Dot color="#22c55e" pulse />
-                    verified
-                  </span>
-                : <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 flex-shrink-0">
-                    <Dot color="#f59e0b" />
-                    not verified
-                  </span>
-              : undefined
+            <div className="flex items-center gap-2 shrink-0">
+              {user.phone && (
+                user.isPhoneVerified
+                  ? <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      <Dot color="#22c55e" pulse />
+                      verified
+                    </span>
+                  : <span className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      <Dot color="#f59e0b" />
+                      not verified
+                    </span>
+              )}
+              <PhoneEditor current={user.phone} />
+            </div>
           }
         />
 
