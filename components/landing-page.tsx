@@ -747,6 +747,33 @@ function HeroSection() {
           </Link>
         </motion.div>
       </motion.div>
+
+      {/* Peerlist Launchpad badge */}
+      <motion.div
+        className="mt-8"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 1.0, ease: EASE }}
+      >
+        <a
+          href="https://peerlist.io/burilesudhanshu/project/letssplit"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <img
+            src="https://peerlist.io/api/v1/projects/embed/PRJH6A766MONMG7KNF7DPM7R9KMEQ6?showUpvote=false&theme=light"
+            alt="LetsSplit on Peerlist"
+            style={{ width: "auto", height: "72px" }}
+            className="dark:hidden"
+          />
+          <img
+            src="https://peerlist.io/api/v1/projects/embed/PRJH6A766MONMG7KNF7DPM7R9KMEQ6?showUpvote=false&theme=dark"
+            alt="LetsSplit on Peerlist"
+            style={{ width: "auto", height: "72px" }}
+            className="hidden dark:block"
+          />
+        </a>
+      </motion.div>
     </section>
   );
 }
