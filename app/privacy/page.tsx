@@ -86,7 +86,7 @@ export default function PrivacyPage() {
             <li>To show other members of a group your name, photo, and payment status so the group can coordinate.</li>
             <li>To calculate the trust score shown on your public profile, based on reviews and platform history.</li>
             <li>To send transactional email — verification links, password resets, join-request notifications, and payment reminders.</li>
-            <li>To detect abuse, fraud, or violations of our Terms of Use.</li>
+            <li>To detect fraud, abuse or violations of our Terms of Use.</li>
           </ul>
           <p>We do not use your data to serve third-party advertising, and we do not sell your personal information.</p>
         </Section>
